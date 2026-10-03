@@ -126,16 +126,16 @@ export function AddIssueForm({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent)] text-white shadow-lg shadow-black/15 transition active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
-          aria-label="Dodaj zgłoszenie"
+          className="ink-btn group fixed bottom-6 right-5 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--riso-red)] text-[var(--surface)]"
+          aria-label="Dodaj zgłoszenie" title="Zgłoś problem"
         >
-          <Plus className="h-7 w-7" strokeWidth={2.25} />
+          <Plus className="h-8 w-8 transition-transform duration-300 group-hover:rotate-90" strokeWidth={3} />
         </button>
       ) : (
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-[15px] font-semibold text-white transition active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+          className="ink-btn inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--riso-red)] px-4 py-3.5 text-[15px] font-bold text-[var(--surface)]"
         >
           <Plus className="h-4 w-4" aria-hidden />
           Zgłoś problem
@@ -145,7 +145,7 @@ export function AddIssueForm({
       <AnimatePresence>
         {open && (
           <motion.div
-            className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
+            className="fixed inset-0 z-[60] flex items-end justify-center bg-[#1f1b16]/55 sm:items-center sm:p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -159,19 +159,19 @@ export function AddIssueForm({
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 32, opacity: 0 }}
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
-              className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] bg-[var(--surface)] shadow-2xl sm:rounded-[28px]"
+              className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] border-2 border-[var(--ink)] bg-[var(--background)] shadow-[6px_6px_0_var(--ink)] sm:rounded-[28px]"
             >
-              <div className="flex items-center justify-between border-b border-[var(--line)] px-5 py-4">
+              <div className="flex items-center justify-between border-b-2 border-[var(--ink)] bg-[var(--riso-yellow)] px-5 py-4">
                 <h2
                   id="add-issue-title"
-                  className="text-[17px] font-semibold tracking-tight text-[var(--ink)]"
+                  className="font-display text-[24px] font-black italic tracking-tight text-[var(--ink)]"
                 >
-                  Nowe zgłoszenie
+                  Nowa kartka
                 </h2>
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="rounded-full bg-[var(--wash)] p-2 text-[var(--muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+                  className="ink-btn rounded-full bg-[var(--surface)] p-1.5 text-[var(--ink)]"
                   aria-label="Zamknij"
                 >
                   <X className="h-5 w-5" />
@@ -180,7 +180,7 @@ export function AddIssueForm({
 
               <div className="space-y-4 overflow-y-auto px-5 py-4">
                 <div>
-                  <p className="mb-2 text-[13px] font-medium text-[var(--muted)]">
+                  <p className="mb-2 text-[12px] font-extrabold uppercase tracking-[0.14em] text-[var(--ink)]">
                     Zdjęcie
                   </p>
                   <input
@@ -192,7 +192,7 @@ export function AddIssueForm({
                     onChange={(e) => onPhotoChange(e.target.files?.[0])}
                   />
                   {imageUrl ? (
-                    <div className="relative overflow-hidden rounded-2xl">
+                    <div className="relative overflow-hidden rounded-2xl border-2 border-[var(--ink)]">
                       <img
                         src={imageUrl}
                         alt="Podgląd zdjęcia zgłoszenia"
@@ -201,7 +201,7 @@ export function AddIssueForm({
                       <button
                         type="button"
                         onClick={() => setImageUrl(null)}
-                        className="absolute right-3 top-3 rounded-full bg-black/50 p-2 text-white"
+                        className="ink-btn absolute right-3 top-3 rounded-full bg-[var(--surface)] p-1.5 text-[var(--ink)]"
                         aria-label="Usuń zdjęcie"
                       >
                         <X className="h-4 w-4" />
@@ -211,61 +211,61 @@ export function AddIssueForm({
                     <button
                       type="button"
                       onClick={() => fileRef.current?.click()}
-                      className="flex h-44 w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[var(--line)] bg-[var(--wash)] text-[var(--muted)] transition active:bg-[var(--line)]"
+                      className="flex h-44 w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[var(--ink)] bg-[var(--surface)] text-[var(--ink)] transition hover:bg-[var(--wash)]"
                     >
                       <span className="flex gap-3">
                         <Camera className="h-6 w-6" />
                         <ImagePlus className="h-6 w-6" />
                       </span>
-                      <span className="text-[15px] font-medium">
+                      <span className="font-display text-[17px] font-bold italic">
                         Zrób lub wybierz zdjęcie
                       </span>
                     </button>
                   )}
                 </div>
 
-                <label className="block text-[13px] font-medium text-[var(--muted)]">
+                <label className="block text-[12px] font-extrabold uppercase tracking-[0.14em] text-[var(--ink)]">
                   Tytuł
                   <input
                     required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border-0 bg-[var(--wash)] px-3.5 py-3 text-[17px] text-[var(--ink)] outline-none ring-0 focus:ring-2 focus:ring-[var(--accent)]/40"
+                    className="mt-1.5 w-full rounded-xl border-2 border-[var(--ink)] bg-[var(--surface)] px-3.5 py-3 text-[17px] text-[var(--ink)] outline-none transition focus:shadow-[3px_3px_0_var(--riso-blue)]"
                     placeholder="Co jest nie tak?"
                   />
                 </label>
 
-                <label className="block text-[13px] font-medium text-[var(--muted)]">
+                <label className="block text-[12px] font-extrabold uppercase tracking-[0.14em] text-[var(--ink)]">
                   Opis
                   <textarea
                     required
                     rows={3}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="mt-1.5 w-full resize-none rounded-xl border-0 bg-[var(--wash)] px-3.5 py-3 text-[17px] text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
+                    className="mt-1.5 w-full resize-none rounded-xl border-2 border-[var(--ink)] bg-[var(--surface)] px-3.5 py-3 text-[17px] text-[var(--ink)] outline-none transition focus:shadow-[3px_3px_0_var(--riso-blue)]"
                     placeholder="Komu przeszkadza i od kiedy?"
                   />
                 </label>
 
-                <label className="block text-[13px] font-medium text-[var(--muted)]">
+                <label className="block text-[12px] font-extrabold uppercase tracking-[0.14em] text-[var(--ink)]">
                   Podpis (opcjonalnie)
                   <input
                     value={authorName}
                     onChange={(e) => setAuthorName(e.target.value)}
                     maxLength={60}
-                    className="mt-1.5 w-full rounded-xl border-0 bg-[var(--wash)] px-3.5 py-3 text-[17px] text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
+                    className="mt-1.5 w-full rounded-xl border-2 border-[var(--ink)] bg-[var(--surface)] px-3.5 py-3 text-[17px] text-[var(--ink)] outline-none transition focus:shadow-[3px_3px_0_var(--riso-blue)]"
                     placeholder="np. Anna K."
                   />
                 </label>
 
-                <label className="block text-[13px] font-medium text-[var(--muted)]">
+                <label className="block text-[12px] font-extrabold uppercase tracking-[0.14em] text-[var(--ink)]">
                   Kategoria
                   <select
                     value={category}
                     onChange={(e) =>
                       setCategory(e.target.value as IssueCategory)
                     }
-                    className="mt-1.5 w-full appearance-none rounded-xl border-0 bg-[var(--wash)] px-3.5 py-3 text-[17px] text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
+                    className="mt-1.5 w-full appearance-none rounded-xl border-2 border-[var(--ink)] bg-[var(--surface)] px-3.5 py-3 text-[17px] text-[var(--ink)] outline-none transition focus:shadow-[3px_3px_0_var(--riso-blue)]"
                   >
                     {(Object.keys(CATEGORY_LABELS) as IssueCategory[]).map(
                       (key) => (
@@ -279,14 +279,14 @@ export function AddIssueForm({
 
                 <div>
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <p className="text-[13px] font-medium text-[var(--muted)]">
+                    <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[var(--ink)]">
                       Lokalizacja
                     </p>
                     <button
                       type="button"
                       onClick={useMyLocation}
                       disabled={geoBusy}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-[var(--wash)] px-3 py-1.5 text-[13px] font-semibold text-[var(--accent)] disabled:opacity-50"
+                      className="ink-btn inline-flex items-center gap-1.5 rounded-full bg-[var(--surface)] px-3 py-1 text-[13px] font-bold text-[var(--accent)] disabled:opacity-50"
                     >
                       <Crosshair className="h-3.5 w-3.5" />
                       {geoBusy ? "Szukam…" : "Moja lokalizacja"}
@@ -295,7 +295,7 @@ export function AddIssueForm({
                   <input
                     value={locationName}
                     onChange={(e) => setLocationName(e.target.value)}
-                    className="mb-2 w-full rounded-xl border-0 bg-[var(--wash)] px-3.5 py-3 text-[17px] text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
+                    className="mb-2 w-full rounded-xl border-2 border-[var(--ink)] bg-[var(--surface)] px-3.5 py-3 text-[17px] text-[var(--ink)] outline-none transition focus:shadow-[3px_3px_0_var(--riso-blue)]"
                     placeholder="Nazwa miejsca"
                   />
                   <LocationPickerMap
@@ -311,26 +311,26 @@ export function AddIssueForm({
                       );
                     }}
                   />
-                  <p className="mt-1.5 text-[12px] text-[var(--muted)]">
+                  <p className="mt-1.5 font-mono text-[12px] text-[var(--muted)]">
                     Kliknij mapę, aby ustawić pin · {lat.toFixed(4)},{" "}
                     {lng.toFixed(4)}
                   </p>
                 </div>
 
                 {geoError && (
-                  <p className="text-[13px] text-red-600" role="alert">
+                  <p className="rounded-xl border-2 border-[var(--ink)] bg-[#fbd3c9] px-3 py-2 text-[14px] font-semibold" role="alert">
                     {geoError}
                   </p>
                 )}
               </div>
 
-              <div className="border-t border-[var(--line)] px-5 py-4">
+              <div className="border-t-2 border-[var(--ink)] px-5 py-4">
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full rounded-2xl bg-[var(--accent)] py-3.5 text-[17px] font-semibold text-white transition active:scale-[0.98] disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+                  className="ink-btn w-full rounded-2xl bg-[var(--riso-red)] py-3.5 text-[18px] font-extrabold text-[var(--surface)] disabled:opacity-60"
                 >
-                  {submitting ? "Publikuję…" : "Opublikuj"}
+                  {submitting ? "Przypinam…" : "Przypnij do tablicy"}
                 </button>
               </div>
             </motion.form>

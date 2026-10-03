@@ -33,6 +33,8 @@ export const api = {
   getIssue: (id: string) => request<Issue>(`/issues/${id}`),
   createIssue: (input: AddIssueInput) => post<Issue>("/issues", input),
   upvote: (id: string) => post<Issue>(`/issues/${id}/upvote`),
+  removeUpvote: (id: string) =>
+    request<Issue>(`/issues/${id}/upvote`, { method: "DELETE" }),
   markSent: (id: string) => post<Issue>(`/issues/${id}/sent`),
   matches: (id: string) =>
     request<{ matches: Match[]; best: Match | null }>(`/issues/${id}/matches`),

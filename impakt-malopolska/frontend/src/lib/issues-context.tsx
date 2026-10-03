@@ -16,7 +16,8 @@ type IssuesContextValue = {
   error: string | null;
   refresh: () => Promise<void>;
   addIssue: (input: AddIssueInput) => Promise<Issue>;
-  upvote: (id: string) => Promise<Issue>;
+  /** Popiera albo cofa poparcie — jeden głos na przeglądarkę. */
+  toggleVote: (id: string) => Promise<Issue>;
   markSent: (id: string) => Promise<Issue>;
   reset: () => Promise<void>;
 };
@@ -54,9 +55,14 @@ export function IssuesProvider({ children }: { children: ReactNode }) {
     return issue;
   }, []);
 
-  const upvote = useCallback(
-    async (id: string) => replace(await api.upvote(id)),
-    [replace],
+  const toggleVote = useCallback(
+    async (id: string) => {
+      const current = issues.find((i) => i.id === id);
+      return replace(
+        await (current?.voted ? api.removeUpvote(id) : api.upvote(id)),
+      );
+    },
+    [issues, replace],
   );
 
   const markSent = useCallback(
@@ -70,8 +76,8 @@ export function IssuesProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const value = useMemo(
-    () => ({ issues, ready, error, refresh, addIssue, upvote, markSent, reset }),
-    [issues, ready, error, refresh, addIssue, upvote, markSent, reset],
+    () => ({ issues, ready, error, refresh, addIssue, toggleVote, markSent, reset }),
+    [issues, ready, error, refresh, addIssue, toggleVote, markSent, reset],
   );
 
   return (

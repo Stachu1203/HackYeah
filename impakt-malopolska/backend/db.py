@@ -76,8 +76,9 @@ def purge_old_issues(conn: sqlite3.Connection) -> int:
 def init_if_needed() -> None:
     conn = connect()
     try:
+        # Tabela votes doszła później — jej brak oznacza starą bazę do odtworzenia.
         has_schema = conn.execute(
-            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'issues'"
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'votes'"
         ).fetchone()
         if not has_schema:
             reset_database(conn)

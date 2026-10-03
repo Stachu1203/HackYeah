@@ -14,10 +14,10 @@ import "leaflet/dist/leaflet.css";
 const MALOPOLSKA_CENTER: [number, number] = [49.95, 20.0];
 
 function heatColor(upvotes: number): string {
-  if (upvotes >= 40) return "#ff3b30";
-  if (upvotes >= UPVOTE_THRESHOLD) return "#ff9500";
-  if (upvotes >= 10) return "#ffcc00";
-  return "#007aff";
+  if (upvotes >= 40) return "#e2402a";
+  if (upvotes >= UPVOTE_THRESHOLD) return "#f28db2";
+  if (upvotes >= 10) return "#f0b429";
+  return "#2b4acb";
 }
 
 function FitBounds({ issues }: { issues: Issue[] }) {
@@ -82,12 +82,12 @@ export function IssuesMap({
               center={[issue.latitude, issue.longitude]}
               radius={radius}
               pathOptions={{
-                color: selected ? "#1c1c1e" : heatColor(issue.upvotes),
+                color: "#1f1b16",
                 fillColor: heatColor(issue.upvotes),
                 fillOpacity: heatMode
                   ? 0.35 + Math.min(issue.upvotes / 80, 0.45)
                   : 0.8,
-                weight: selected ? 3 : 1.5,
+                weight: selected ? 3.5 : 2,
               }}
               eventHandlers={{
                 click: () => onSelect?.(issue.id),
@@ -95,7 +95,7 @@ export function IssuesMap({
             >
               <Popup>
                 <div className="min-w-[180px] space-y-1 text-sm">
-                  <p className="font-semibold">{issue.title}</p>
+                  <p className="font-display text-[15px] font-bold italic">{issue.title}</p>
                   <p className="text-xs text-neutral-600">
                     {issue.locationName} · {CATEGORY_LABELS[issue.category]}
                   </p>
@@ -104,7 +104,7 @@ export function IssuesMap({
                   </p>
                   <Link
                     to={`/zgloszenie/${issue.id}`}
-                    className="inline-block text-xs font-semibold text-[#007aff]"
+                    className="inline-block text-xs font-bold text-[#2b4acb] underline"
                   >
                     Otwórz →
                   </Link>

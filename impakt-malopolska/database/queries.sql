@@ -22,11 +22,29 @@ VALUES (:id, :title, :description, :category, :latitude, :longitude,
         :location_name, 1, 'DRAFT', :image_url, :author_name,
         strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), :keywords, :embedding);
 
+-- name: add_vote
+INSERT OR IGNORE INTO votes (issue_id, voter_id) VALUES (:id, :voter_id);
+
+-- name: remove_vote
+DELETE FROM votes WHERE issue_id = :id AND voter_id = :voter_id;
+
+-- name: voted_issue_ids
+SELECT issue_id FROM votes WHERE voter_id = :voter_id;
+
 -- name: upvote_issue
 UPDATE issues
 SET upvotes = upvotes + 1,
     status  = CASE
                   WHEN status = 'DRAFT' AND upvotes + 1 >= :threshold THEN 'READY_TO_SEND'
+                  ELSE status
+              END
+WHERE id = :id;
+
+-- name: downvote_issue
+UPDATE issues
+SET upvotes = MAX(upvotes - 1, 0),
+    status  = CASE
+                  WHEN status = 'READY_TO_SEND' AND upvotes - 1 < :threshold THEN 'DRAFT'
                   ELSE status
               END
 WHERE id = :id;

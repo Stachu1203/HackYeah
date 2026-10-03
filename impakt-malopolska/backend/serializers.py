@@ -4,7 +4,7 @@ import json
 import sqlite3
 
 
-def issue_to_json(row: sqlite3.Row) -> dict:
+def issue_to_json(row: sqlite3.Row, voted: bool = False) -> dict:
     return {
         "id": row["id"],
         "title": row["title"],
@@ -19,6 +19,7 @@ def issue_to_json(row: sqlite3.Row) -> dict:
         "authorName": row["author_name"],
         "createdAt": row["created_at"],
         "keywords": json.loads(row["keywords"]),
+        "voted": voted,
     }
 
 

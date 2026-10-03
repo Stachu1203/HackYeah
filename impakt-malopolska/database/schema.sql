@@ -3,6 +3,7 @@
 
 PRAGMA foreign_keys = ON;
 
+DROP TABLE IF EXISTS votes;
 DROP TABLE IF EXISTS issues;
 DROP TABLE IF EXISTS innovations;
 
@@ -41,3 +42,13 @@ CREATE TABLE issues (
 
 CREATE INDEX idx_issues_created_at ON issues (created_at);
 CREATE INDEX idx_issues_category   ON issues (category);
+
+-- Jeden głos na osobę: voter_id pochodzi z ciasteczka przeglądarki.
+CREATE TABLE votes (
+    issue_id   TEXT NOT NULL REFERENCES issues (id) ON DELETE CASCADE,
+    voter_id   TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    PRIMARY KEY (issue_id, voter_id)
+);
+
+CREATE INDEX idx_votes_voter ON votes (voter_id);

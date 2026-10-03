@@ -1,62 +1,186 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
+/* Tablica sąsiedzka w duchu druku risograficznego: papier, tusz, kilka farb. */
 :root {
-  --background: #f2f2f7;
-  --foreground: #1c1c1e;
-  --ink: #1c1c1e;
-  --muted: #8e8e93;
-  --surface: #ffffff;
-  --wash: #e5e5ea;
-  --line: #d1d1d6;
-  --accent: #007aff;
-  --accent-ink: #007aff;
-  --accent-soft: #e8f2ff;
+  --background: #f3ecdf;
+  --foreground: #1f1b16;
+  --ink: #1f1b16;
+  --muted: #6b6155;
+  --surface: #fffaf1;
+  --wash: #ebe1cf;
+  --line: #d6c9b3;
+  --accent: #2b4acb;
+  --accent-ink: #2b4acb;
+  --accent-soft: #dfe4fa;
+
+  --riso-red: #e2402a;
+  --riso-blue: #2b4acb;
+  --riso-yellow: #f0b429;
+  --riso-pink: #f28db2;
+  --riso-mint: #2f9e7f;
+  --riso-teal: #1f8ea3;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "SF Pro Text",
-    "Segoe UI",
-    system-ui,
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-
-.font-display {
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "SF Pro Display",
-    system-ui,
-    sans-serif;
-}
-
-.leaflet-container {
-  font: inherit;
-  background: #e5e5ea;
-}
-
-.leaflet-control-attribution {
-  font-size: 10px;
-}
-
-*:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  --font-sans: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-mono: "Courier Prime", "Courier New", ui-monospace, monospace;
 }
 
 html,
 body {
   height: 100%;
+}
+
+body {
+  background-color: var(--background);
+  background-image: radial-gradient(rgba(31, 27, 22, 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Ziarno papieru nad całą stroną */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.22;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .12 0 0 0 0 .1 0 0 0 0 .08 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.font-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+}
+
+@layer components {
+  /* Kartka przypięta do tablicy: tusz + twardy cień */
+  .paper-card {
+    position: relative;
+    background: var(--surface);
+    border: 2px solid var(--ink);
+    border-radius: 18px;
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+
+  .ink-btn {
+    border: 2px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+    transition:
+      transform 120ms ease,
+      box-shadow 120ms ease,
+      background-color 150ms ease;
+  }
+  .ink-btn:hover:not(:disabled) {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+  .ink-btn:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 var(--ink);
+  }
+
+  /* Kawałek taśmy klejącej na górze kartki */
+  .tape {
+    position: absolute;
+    top: -13px;
+    left: 50%;
+    z-index: 2;
+    width: 96px;
+    height: 26px;
+    translate: -50% 0;
+    rotate: -3deg;
+    background: color-mix(in srgb, var(--riso-yellow) 70%, transparent);
+    border-left: 2px dashed rgba(31, 27, 22, 0.15);
+    border-right: 2px dashed rgba(31, 27, 22, 0.15);
+  }
+
+  /* Pieczątka urzędowa */
+  .stamp {
+    display: inline-block;
+    padding: 4px 10px;
+    border: 2.5px solid currentColor;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    rotate: -5deg;
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, currentColor 35%, transparent);
+  }
+
+  /* Odręczne podkreślenie pod nagłówkiem */
+  .squiggle {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='10' viewBox='0 0 60 10'%3E%3Cpath d='M0 6 Q 7.5 0 15 6 T 30 6 T 45 6 T 60 6' fill='none' stroke='%23e2402a' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: repeat-x;
+    background-position: 0 100%;
+    background-size: 30px 8px;
+    padding-bottom: 10px;
+  }
+
+  /* Zakreślacz */
+  .marker {
+    background: linear-gradient(
+      100deg,
+      transparent 2%,
+      color-mix(in srgb, var(--riso-yellow) 75%, transparent) 4%,
+      color-mix(in srgb, var(--riso-yellow) 60%, transparent) 96%,
+      transparent 98%
+    );
+    padding: 0 0.15em;
+  }
+
+  /* Kartka z liniami — wniosek */
+  .lined-paper {
+    background-color: #fffdf6;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 27px,
+      rgba(43, 74, 203, 0.16) 27px,
+      rgba(43, 74, 203, 0.16) 28px
+    );
+    line-height: 28px;
+  }
+}
+
+/* Mapa w sepii, żeby pasowała do papieru */
+.leaflet-container {
+  font: inherit;
+  background: var(--wash);
+}
+.leaflet-tile-pane {
+  filter: grayscale(1) sepia(0.35) contrast(1.05) brightness(1.03);
+}
+.leaflet-control-attribution {
+  font-size: 10px;
+}
+.leaflet-popup-content-wrapper {
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 var(--ink);
+  background: var(--surface);
+}
+
+*:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ink-btn,
+  .ink-btn:hover,
+  .ink-btn:active {
+    transition: none;
+    transform: none;
+  }
 }

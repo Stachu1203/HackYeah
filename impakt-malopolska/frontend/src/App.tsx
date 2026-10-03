@@ -1,3 +1,4 @@
+import { MotionConfig } from "framer-motion";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { SiteNav } from "./components/SiteNav";
 import { IssuesProvider } from "./lib/issues-context";
@@ -14,17 +15,19 @@ export default function App() {
   if (pathname === "/slajdy") return <SlidesPage />;
 
   return (
-    <RoleProvider>
-      <IssuesProvider>
-        <SiteNav />
-        <main className="flex flex-1 flex-col">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/zgloszenie/:id" element={<IssueDetailPage />} />
-            <Route path="/admin" element={<AdminPage />} />
-          </Routes>
-        </main>
-      </IssuesProvider>
-    </RoleProvider>
+    <MotionConfig reducedMotion="user">
+      <RoleProvider>
+        <IssuesProvider>
+          <SiteNav />
+          <main className="flex flex-1 flex-col">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/zgloszenie/:id" element={<IssueDetailPage />} />
+              <Route path="/admin" element={<AdminPage />} />
+            </Routes>
+          </main>
+        </IssuesProvider>
+      </RoleProvider>
+    </MotionConfig>
   );
 }

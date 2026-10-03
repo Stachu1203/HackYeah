@@ -1,24 +1,25 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { motion } from "framer-motion";
-import {
-  ArrowLeft,
-  FileText,
-  Heart,
-  MapPin,
-  Send,
-  Sparkles,
-} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowLeft, FileText, MapPin, Send, Sparkles } from "lucide-react";
 import { api, type Match } from "../lib/api";
 import { useIssues } from "../lib/issues-context";
 import type { PetitionDraft } from "../lib/types";
 import { CATEGORY_LABELS, UPVOTE_THRESHOLD } from "../lib/types";
-import { CATEGORY_ICONS } from "../lib/category-ui";
+import { CATEGORY_COLORS, CATEGORY_ICONS } from "../lib/category-ui";
 import { categoryPlaceholder } from "../lib/placeholders";
+import { VoteButton } from "../components/VoteButton";
+import { timeAgo } from "../components/IssueFeed";
+
+const STATUS_LABELS = {
+  DRAFT: "Zbiera poparcie",
+  READY_TO_SEND: "Gotowe do wniosku",
+  SENT: "Wysłano do urzędu",
+} as const;
 
 export function IssueDetailPage() {
   const { id: issueId = "" } = useParams();
-  const { issues, ready, upvote, markSent } = useIssues();
+  const { issues, ready, toggleVote, markSent } = useIssues();
   const issue = issues.find((i) => i.id === issueId);
   const [matches, setMatches] = useState<Match[]>([]);
   const [petition, setPetition] = useState<PetitionDraft | null>(null);
@@ -43,6 +44,14 @@ export function IssueDetailPage() {
   function showToast(message: string) {
     setToast(message);
     setTimeout(() => setToast(null), 3000);
+  }
+
+  async function handleToggleVote(id: string) {
+    try {
+      await toggleVote(id);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Nie udało się zagłosować");
+    }
   }
 
   async function generatePetition() {
@@ -72,122 +81,165 @@ export function IssueDetailPage() {
 
   if (!ready) {
     return (
-      <p role="status" className="py-16 text-center text-[15px] text-[var(--muted)]">
-        Ładowanie…
+      <p role="status" className="py-16 text-center font-display text-[18px] italic text-[var(--muted)]">
+        Szukamy kartki…
       </p>
     );
   }
 
   if (!issue) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <p className="text-[17px] text-[var(--muted)]">
-          Nie znaleziono zgłoszenia — mogło wygasnąć po 7 dniach.
-        </p>
-        <Link to="/" className="mt-4 inline-block font-semibold text-[var(--accent)]">
-          Wróć
-        </Link>
+      <div className="mx-auto max-w-lg px-4 py-16">
+        <div className="paper-card p-8 text-center">
+          <span className="tape" aria-hidden />
+          <p className="font-display text-[26px] font-bold italic">Kartka odpadła</p>
+          <p className="mt-2 text-[15px] text-[var(--muted)]">
+            Nie znaleziono zgłoszenia — mogło wygasnąć po 7 dniach.
+          </p>
+          <Link
+            to="/"
+            className="ink-btn mt-6 inline-flex rounded-full bg-[var(--riso-yellow)] px-5 py-2 font-bold"
+          >
+            Wróć do tablicy
+          </Link>
+        </div>
       </div>
     );
   }
 
   const Icon = CATEGORY_ICONS[issue.category];
+  const colors = CATEGORY_COLORS[issue.category];
   const src =
     issue.imageUrl || categoryPlaceholder(issue.category, issue.title);
+  const progress = Math.min(1, issue.upvotes / UPVOTE_THRESHOLD);
 
   return (
-    <div className="mx-auto w-full max-w-lg pb-16">
-      <div className="relative">
-        <img
-          src={src}
-          alt=""
-          className="aspect-[4/3] w-full object-cover bg-[var(--wash)]"
-        />
-        <Link
-          to="/"
-          className="absolute left-4 top-4 inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-2 text-[14px] font-semibold text-[var(--ink)] shadow-sm backdrop-blur"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Wróć
-        </Link>
-      </div>
+    <div className="mx-auto w-full max-w-lg px-4 pb-20 pt-6">
+      <Link
+        to="/"
+        className="ink-btn mb-6 inline-flex items-center gap-1.5 rounded-full bg-[var(--surface)] px-3.5 py-1.5 text-[14px] font-bold"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden />
+        Tablica
+      </Link>
 
-      <div className="space-y-5 px-4 pt-4">
-        <div>
-          <div className="mb-2 flex items-center gap-2 text-[13px] text-[var(--muted)]">
-            <Icon className="h-4 w-4" aria-hidden />
-            {CATEGORY_LABELS[issue.category]} · {issue.status}
-          </div>
-          <h1 className="text-[28px] font-bold leading-tight tracking-tight text-[var(--ink)]">
-            {issue.title}
-          </h1>
-          <p className="mt-2 flex items-center gap-1 text-[15px] text-[var(--muted)]">
-            <MapPin className="h-4 w-4 shrink-0" />
-            {issue.locationName} · {issue.authorName}
-          </p>
-          <p className="mt-3 text-[17px] leading-relaxed text-[var(--ink)]">
-            {issue.description}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={() =>
-              upvote(issue.id).catch((e: unknown) =>
-                showToast(e instanceof Error ? e.message : "Nie udało się poprzeć"),
-              )
-            }
-            className="inline-flex items-center gap-2 rounded-full bg-[var(--wash)] px-4 py-2.5 text-[15px] font-semibold"
-          >
-            <Heart className="h-4 w-4 text-[#ff3b30]" fill="#ff3b30" />
-            {issue.upvotes}
-          </button>
-          {issue.upvotes < UPVOTE_THRESHOLD && (
-            <span className="text-[14px] text-[var(--muted)]">
-              Do progu wniosku: {UPVOTE_THRESHOLD - issue.upvotes}
+      <div className="paper-card -rotate-[0.6deg] p-3">
+        <span className="tape" aria-hidden />
+        <div className="relative overflow-hidden rounded-xl border-2 border-[var(--ink)]">
+          <img src={src} alt="" className="aspect-[4/3] w-full bg-[var(--wash)] object-cover" />
+          {issue.status !== "DRAFT" && (
+            <span
+              className={`stamp absolute bottom-4 right-4 text-[13px] ${
+                issue.status === "SENT" ? "text-[var(--riso-blue)]" : "text-[var(--riso-red)]"
+              }`}
+            >
+              {STATUS_LABELS[issue.status]}
             </span>
           )}
         </div>
+      </div>
+
+      <div className="mt-8 space-y-10">
+        <section>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full border-2 border-[var(--ink)] px-2.5 py-0.5 text-[12px] font-bold"
+              style={{ background: colors.bg }}
+            >
+              <Icon className="h-3.5 w-3.5" style={{ color: colors.fg }} aria-hidden />
+              {CATEGORY_LABELS[issue.category]}
+            </span>
+            <span className="text-[12px] font-bold uppercase tracking-wider text-[var(--muted)]">
+              {STATUS_LABELS[issue.status]}
+            </span>
+          </div>
+          <h1 className="font-display text-[38px] font-black leading-[1.02] tracking-tight text-[var(--ink)]">
+            {issue.title}
+          </h1>
+          <p className="mt-3 flex items-center gap-1.5 text-[14px] font-medium text-[var(--muted)]">
+            <MapPin className="h-4 w-4 shrink-0" aria-hidden />
+            {issue.locationName} · {issue.authorName} · {timeAgo(issue.createdAt)}
+          </p>
+          <p className="mt-4 text-[18px] leading-relaxed text-[var(--ink)]">
+            {issue.description}
+          </p>
+
+          <div className="paper-card mt-6 flex flex-wrap items-center gap-4 p-4">
+            <VoteButton issue={issue} onToggle={handleToggleVote} size="lg" />
+            <div className="min-w-[10rem] flex-1">
+              <p className="text-[13px] font-bold">
+                {issue.upvotes >= UPVOTE_THRESHOLD
+                  ? "Próg wniosku osiągnięty"
+                  : `Do progu wniosku: ${UPVOTE_THRESHOLD - issue.upvotes}`}
+              </p>
+              <div
+                className="mt-1.5 h-3 overflow-hidden rounded-full border-2 border-[var(--ink)] bg-[var(--surface)]"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={UPVOTE_THRESHOLD}
+                aria-valuenow={Math.min(issue.upvotes, UPVOTE_THRESHOLD)}
+                aria-label="Poparcie do progu wniosku"
+              >
+                <motion.div
+                  className="h-full bg-[var(--riso-red)]"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress * 100}%` }}
+                  transition={{ type: "spring", damping: 20 }}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section aria-labelledby="match-heading">
           <h2
             id="match-heading"
-            className="flex items-center gap-2 text-[20px] font-bold tracking-tight"
+            className="flex items-center gap-2 font-display text-[28px] font-black italic tracking-tight"
           >
-            <Sparkles className="h-5 w-5 text-[var(--accent)]" />
+            <Sparkles className="h-6 w-6 text-[var(--riso-yellow)]" fill="currentColor" aria-hidden />
             Dopasowanie
           </h2>
           <p className="mt-1 text-[14px] text-[var(--muted)]">
-            Matchmaking społeczny na embeddingach — podobne rozwiązania z regionu.
+            Sprawdzone rozwiązania z innych gmin Małopolski, dobrane po treści zgłoszenia.
           </p>
           {matches.length === 0 && (
-            <p className="mt-3 rounded-2xl bg-[var(--surface)] p-4 text-[15px] text-[var(--muted)] shadow-sm">
+            <p className="paper-card mt-4 p-4 text-[15px] text-[var(--muted)]">
               Brak podobnych innowacji w bibliotece — wniosek powstanie bez wskazania wzoru.
             </p>
           )}
-          <ul className="mt-3 space-y-3">
+          <ul className="mt-5 space-y-5">
             {matches.map(({ innovation, score }, index) => (
               <motion.li
                 key={innovation.id}
-                initial={{ opacity: 0, y: 8 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.06 }}
-                className={`rounded-2xl p-4 ${
-                  index === 0
-                    ? "bg-[var(--accent-soft)]"
-                    : "bg-[var(--surface)] shadow-sm"
+                transition={{ delay: index * 0.08 }}
+                className={`paper-card p-4 ${
+                  index === 0 ? "rotate-[0.5deg] bg-[#fdf1cf]" : ""
                 }`}
               >
-                {index === 0 && (
-                  <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-[var(--accent)]">
-                    Najlepsze · {score}% podobieństwa
-                  </p>
-                )}
-                <p className="text-[16px] font-semibold">{innovation.title}</p>
-                <p className="text-[13px] text-[var(--muted)]">
-                  {innovation.sourceMunicipality}
-                </p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    {index === 0 && (
+                      <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[var(--riso-red)]">
+                        Najlepsze dopasowanie
+                      </p>
+                    )}
+                    <p className="font-display text-[19px] font-bold leading-snug">
+                      {innovation.title}
+                    </p>
+                    <p className="text-[13px] font-semibold text-[var(--muted)]">
+                      {innovation.sourceMunicipality} · {innovation.grantHint}
+                    </p>
+                  </div>
+                  <span
+                    className="flex h-14 w-14 shrink-0 rotate-6 flex-col items-center justify-center rounded-full border-2 border-[var(--ink)] bg-[var(--surface)] leading-none"
+                    title="Podobieństwo treści"
+                  >
+                    <span className="font-display text-[19px] font-black">{score}</span>
+                    <span className="text-[9px] font-bold uppercase">% zgod.</span>
+                  </span>
+                </div>
                 <p className="mt-2 text-[15px] leading-relaxed text-[var(--ink)]">
                   {innovation.description}
                 </p>
@@ -196,46 +248,47 @@ export function IssueDetailPage() {
           </ul>
         </section>
 
-        <section aria-labelledby="petition-heading" className="pb-8">
+        <section aria-labelledby="petition-heading">
           <h2
             id="petition-heading"
-            className="flex items-center gap-2 text-[20px] font-bold tracking-tight"
+            className="flex items-center gap-2 font-display text-[28px] font-black italic tracking-tight"
           >
-            <FileText className="h-5 w-5 text-[var(--accent)]" />
+            <FileText className="h-6 w-6 text-[var(--riso-blue)]" aria-hidden />
             Wniosek
           </h2>
           <button
             type="button"
             onClick={generatePetition}
             disabled={loadingPetition}
-            className="mt-3 w-full rounded-2xl bg-[var(--accent)] py-3.5 text-[17px] font-semibold text-white disabled:opacity-50"
+            className="ink-btn mt-4 w-full rounded-2xl bg-[var(--riso-blue)] py-3.5 text-[17px] font-extrabold text-[var(--surface)] disabled:opacity-60"
           >
-            {loadingPetition ? "Generuję…" : "Generuj wniosek (art. 241 KPA)"}
+            {loadingPetition ? "Piszę…" : "Napisz wniosek (art. 241 KPA)"}
           </button>
 
           {petition && (
             <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-4 space-y-3 rounded-2xl bg-[var(--surface)] p-4 shadow-sm"
+              initial={{ opacity: 0, y: 16, rotate: 1.5 }}
+              animate={{ opacity: 1, y: 0, rotate: -0.4 }}
+              className="paper-card lined-paper mt-6 space-y-3 p-5"
             >
-              <p className="text-[14px]">
-                <span className="font-semibold">Do: </span>
+              <span className="tape" aria-hidden />
+              <p className="font-mono text-[14px]">
+                <span className="font-bold">Do: </span>
                 {petition.targetDepartment}
               </p>
-              <p className="text-[14px]">
-                <span className="font-semibold">Temat: </span>
+              <p className="font-mono text-[14px]">
+                <span className="font-bold">Temat: </span>
                 {petition.subject}
               </p>
-              <pre className="whitespace-pre-wrap rounded-xl bg-[var(--wash)] p-4 font-sans text-[14px] leading-relaxed">
+              <pre className="whitespace-pre-wrap font-mono text-[14px]">
                 {petition.bodyText}
               </pre>
               <button
                 type="button"
                 onClick={sendMailto}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--ink)] py-3.5 text-[17px] font-semibold text-white"
+                className="ink-btn inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--ink)] py-3.5 text-[17px] font-extrabold text-[var(--surface)]"
               >
-                <Send className="h-4 w-4" />
+                <Send className="h-4 w-4" aria-hidden />
                 Wyślij (demo)
               </button>
             </motion.div>
@@ -243,16 +296,19 @@ export function IssueDetailPage() {
         </section>
       </div>
 
-      {toast && (
-        <motion.div
-          role="status"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="fixed bottom-6 left-1/2 z-[70] -translate-x-1/2 rounded-full bg-[var(--ink)] px-5 py-2.5 text-[14px] font-medium text-white"
-        >
-          {toast}
-        </motion.div>
-      )}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            role="status"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0, rotate: -1 }}
+            exit={{ opacity: 0 }}
+            className="fixed bottom-6 left-1/2 z-[70] -translate-x-1/2 rounded-full border-2 border-[var(--ink)] bg-[var(--riso-yellow)] px-5 py-2.5 text-[14px] font-bold shadow-[3px_3px_0_var(--ink)]"
+          >
+            {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

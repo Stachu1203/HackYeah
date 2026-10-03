@@ -1,10 +1,11 @@
 """ImpaktMałopolska — REST API (Flask + SQLite)."""
 
 import json
+import re
 import time
 import uuid
 
-from flask import Flask, abort, jsonify, request
+from flask import Flask, abort, g, jsonify, request
 
 import db
 import embeddings
@@ -19,6 +20,8 @@ CATEGORIES = {
 }
 MAX_IMAGE_CHARS = 2_100_000  # ~1.5 MB pliku po zakodowaniu base64
 PURGE_INTERVAL_S = 60
+VOTER_COOKIE = "impakt_voter"
+VOTER_ID_RE = re.compile(r"^[0-9a-f]{32}$")
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 3 * 1024 * 1024
@@ -38,6 +41,24 @@ def purge_week_old_issues():
         db.purge_old_issues(db.get_db())
 
 
+@app.before_request
+def identify_voter():
+    """Każda przeglądarka dostaje anonimowy identyfikator — jeden głos na zgłoszenie."""
+    voter_id = request.cookies.get(VOTER_COOKIE, "")
+    g.new_voter = not VOTER_ID_RE.match(voter_id)
+    g.voter_id = uuid.uuid4().hex if g.new_voter else voter_id
+
+
+@app.after_request
+def set_voter_cookie(response):
+    if g.get("new_voter"):
+        response.set_cookie(
+            VOTER_COOKIE, g.voter_id,
+            max_age=365 * 24 * 3600, httponly=True, samesite="Lax",
+        )
+    return response
+
+
 @app.errorhandler(400)
 @app.errorhandler(404)
 @app.errorhandler(413)
@@ -52,6 +73,18 @@ def _get_issue_row(issue_id: str):
     return row
 
 
+def _has_voted(issue_id: str) -> bool:
+    row = db.get_db().execute(
+        "SELECT 1 FROM votes WHERE issue_id = :id AND voter_id = :voter_id",
+        {"id": issue_id, "voter_id": g.voter_id},
+    ).fetchone()
+    return row is not None
+
+
+def _issue_response(issue_id: str):
+    return jsonify(issue_to_json(_get_issue_row(issue_id), _has_voted(issue_id)))
+
+
 def _extract_keywords(description: str) -> list[str]:
     words = [w for w in description.lower().split() if len(w) > 4]
     return words[:8]
@@ -64,13 +97,18 @@ def health():
 
 @app.get("/api/issues")
 def list_issues():
-    rows = db.get_db().execute(db.Q["list_issues"]).fetchall()
-    return jsonify([issue_to_json(r) for r in rows])
+    conn = db.get_db()
+    rows = conn.execute(db.Q["list_issues"]).fetchall()
+    voted = {
+        r["issue_id"]
+        for r in conn.execute(db.Q["voted_issue_ids"], {"voter_id": g.voter_id})
+    }
+    return jsonify([issue_to_json(r, r["id"] in voted) for r in rows])
 
 
 @app.get("/api/issues/<issue_id>")
 def get_issue(issue_id):
-    return jsonify(issue_to_json(_get_issue_row(issue_id)))
+    return _issue_response(issue_id)
 
 
 @app.post("/api/issues")
@@ -119,18 +157,33 @@ def create_issue():
             "embedding": embeddings.embed_record(title, description, keywords),
         },
     )
+    # Autor zgłoszenia oddaje pierwszy głos (upvotes = 1 przy wstawieniu).
+    conn.execute(db.Q["add_vote"], {"id": issue_id, "voter_id": g.voter_id})
     conn.commit()
-    return jsonify(issue_to_json(_get_issue_row(issue_id))), 201
+    return _issue_response(issue_id), 201
 
 
 @app.post("/api/issues/<issue_id>/upvote")
 def upvote_issue(issue_id):
+    _get_issue_row(issue_id)
     conn = db.get_db()
-    cur = conn.execute(db.Q["upvote_issue"], {"id": issue_id, "threshold": UPVOTE_THRESHOLD})
-    if cur.rowcount == 0:
-        abort(404, description="Nie znaleziono zgłoszenia")
+    params = {"id": issue_id, "voter_id": g.voter_id, "threshold": UPVOTE_THRESHOLD}
+    # INSERT OR IGNORE jest atomowy: licznik rośnie tylko przy pierwszym głosie tej osoby.
+    if conn.execute(db.Q["add_vote"], params).rowcount == 1:
+        conn.execute(db.Q["upvote_issue"], params)
     conn.commit()
-    return jsonify(issue_to_json(_get_issue_row(issue_id)))
+    return _issue_response(issue_id)
+
+
+@app.delete("/api/issues/<issue_id>/upvote")
+def remove_upvote(issue_id):
+    _get_issue_row(issue_id)
+    conn = db.get_db()
+    params = {"id": issue_id, "voter_id": g.voter_id, "threshold": UPVOTE_THRESHOLD}
+    if conn.execute(db.Q["remove_vote"], params).rowcount == 1:
+        conn.execute(db.Q["downvote_issue"], params)
+    conn.commit()
+    return _issue_response(issue_id)
 
 
 @app.post("/api/issues/<issue_id>/sent")
@@ -140,7 +193,7 @@ def mark_sent(issue_id):
     if cur.rowcount == 0:
         abort(404, description="Nie znaleziono zgłoszenia")
     conn.commit()
-    return jsonify(issue_to_json(_get_issue_row(issue_id)))
+    return _issue_response(issue_id)
 
 
 @app.get("/api/issues/<issue_id>/matches")

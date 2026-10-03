@@ -11,7 +11,7 @@ import "leaflet/dist/leaflet.css";
 
 const pin = L.divIcon({
   className: "",
-  html: `<span style="display:block;width:18px;height:18px;border-radius:50%;background:#007aff;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25)"></span>`,
+  html: `<span style="display:block;width:18px;height:18px;border-radius:50%;background:#e2402a;border:3px solid #1f1b16;box-shadow:2px 2px 0 #1f1b16"></span>`,
   iconSize: [18, 18],
   iconAnchor: [9, 9],
 });
@@ -47,7 +47,7 @@ type Props = {
 export function LocationPickerMap({ lat, lng, onPick, className = "" }: Props) {
   return (
     <div
-      className={`overflow-hidden rounded-2xl border border-[var(--line)] ${className}`}
+      className={`overflow-hidden rounded-2xl border-2 border-[var(--ink)] ${className}`}
       role="application"
       aria-label="Wybierz lokalizację na mapie — kliknij punkt"
     >

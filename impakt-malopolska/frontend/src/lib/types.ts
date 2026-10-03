@@ -24,6 +24,8 @@ export interface Issue {
   authorName: string;
   createdAt: string;
   keywords: string[];
+  /** czy bieżąca przeglądarka już poparła zgłoszenie */
+  voted: boolean;
 }
 
 export interface Innovation {
