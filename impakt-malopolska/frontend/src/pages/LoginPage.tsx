@@ -275,7 +275,7 @@ export function LoginPage() {
           disabled={busy}
           className="ink-btn w-full rounded-2xl bg-[var(--riso-red)] py-3.5 text-[18px] font-extrabold text-[var(--surface)] disabled:opacity-60"
         >
-          {busy ? "Chwileczkę…" : isLogin ? "Zaloguj" : "Załóż konto"}
+          {busy ? (isLogin ? "Chwileczkę…" : "JEV sprawdza nazwę…") : isLogin ? "Zaloguj" : "Załóż konto"}
         </button>
       </motion.form>
     </div>

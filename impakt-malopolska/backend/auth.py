@@ -12,6 +12,7 @@ from flask import Blueprint, abort, g, jsonify, request, session
 from werkzeug.security import check_password_hash, generate_password_hash
 
 import db
+import jev
 
 bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
@@ -131,6 +132,18 @@ def register():
         abort(400, description=f"Hasło musi mieć co najmniej {MIN_PASSWORD_LEN} znaków")
 
     conn = db.get_db()
+    # Najpierw tanie sprawdzenie zajętości, dopiero potem moderacja przez model.
+    if conn.execute(db.Q["get_user_by_username"], {"username": username}).fetchone():
+        abort(409, description="Ten login jest już zajęty")
+    verdict = jev.moderate_username(username, display_name)
+    if not verdict.allowed:
+        abort(
+            422,
+            description="Nazwa użytkownika nie została zaakceptowana"
+            + (f": {verdict.reason}" if verdict.reason else "")
+            + ". Wybierz inny login lub podpis.",
+        )
+
     user_id = f"usr-{uuid.uuid4().hex[:12]}"
     try:
         conn.execute(

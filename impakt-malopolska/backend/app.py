@@ -314,13 +314,22 @@ def list_comments(issue_id):
 @app.post("/api/issues/<issue_id>/comments")
 @login_required
 def add_comment(issue_id):
-    _get_issue_row(issue_id)
+    issue = _get_issue_row(issue_id)
     data = request.get_json(silent=True) or {}
     body = str(data.get("body", "")).strip()
     if not body:
         abort(400, description="Komentarz nie może być pusty")
     if len(body) > MAX_COMMENT_CHARS:
         abort(400, description=f"Komentarz może mieć najwyżej {MAX_COMMENT_CHARS} znaków")
+
+    verdict = jev.moderate_comment(body, issue["title"])
+    if not verdict.allowed:
+        abort(
+            422,
+            description="Komentarz nie został zaakceptowany"
+            + (f": {verdict.reason}" if verdict.reason else "")
+            + ". Popraw treść i spróbuj ponownie.",
+        )
 
     comment_id = f"cmt-{uuid.uuid4().hex[:10]}"
     conn = db.get_db()

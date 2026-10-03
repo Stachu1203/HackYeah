@@ -68,8 +68,9 @@ Baza `backend/impakt.db` tworzy się sama przy pierwszym starcie. Ręczny reset:
 - **Konta.** Hasła hashowane (werkzeug/scrypt), sesja w podpisanym ciasteczku (httpOnly, 30 dni).
   Klucz sesji: `IMPAKT_SECRET_KEY` albo plik `backend/.secret_key` tworzony przy pierwszym starcie.
   Przeglądać może każdy; dodawanie i popieranie zgłoszeń wymaga konta.
-- **Moderacja JEV.** Przy „Przypnij do tablicy” tytuł, opis i zdjęcia trafiają do modelu przez OpenRouter
-  (`JEV_TOKEN`, opcjonalnie `JEV_MODEL` w `backend/.env`). Obraźliwe treści, dane osobowe i spam są odrzucane (HTTP 422).
+- **Moderacja JEV.** Model przez OpenRouter sprawdza zgłoszenia (tytuł, opis i zdjęcia przy „Przypnij do tablicy”),
+  komentarze przed zapisem oraz login i podpis przy rejestracji (wulgaryzmy, podszywanie się pod urząd, reklamy)
+  — klucz `JEV_TOKEN`, opcjonalnie `JEV_MODEL` w `backend/.env`. Obraźliwe treści, dane osobowe i spam są odrzucane (HTTP 422).
   Gdy OpenRouter nie odpowiada, post przechodzi (zapis w logu) — żeby demo nie stanęło bez sieci.
   Nieczytelne zdjęcie blokuje publikację, więc uszkodzonym plikiem nie da się ominąć moderacji.
 - **Lokalizacja.** Konto może mieć okolicę (przy rejestracji albo w „Moje konto”); tablica domyślnie

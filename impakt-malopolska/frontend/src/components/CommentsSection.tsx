@@ -199,7 +199,7 @@ export function CommentsSection({ issueId }: { issueId: string }) {
               disabled={busy || !body.trim()}
               className="ink-btn rounded-full bg-[var(--riso-mint)] px-5 py-2 text-[15px] font-extrabold text-[var(--surface)] disabled:opacity-50"
             >
-              {busy ? "Dodaję…" : k("Skomentuj", "Skomentuj ♡")}
+              {busy ? k("JEV sprawdza…", "JEV sprawdza… ちょっと待って") : k("Skomentuj", "Skomentuj ♡")}
             </button>
           </div>
         </form>
