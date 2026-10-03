@@ -1,0 +1,5 @@
+Robimy **ImpaktMałopolska** na HubMI: mapa zgłoszeń + upvote → heatmapa → AI dobiera sprawdzoną innowację → generuje formalny wniosek. 4 osoby: front/mapa, UX/PL, AI/backend, pitch. Tylko 3 ekrany. Po 16h tylko polish i prezentacja.
+
+Repo: impakt-malopolska/
+Start: cd impakt-malopolska && npm install && npm run dev
+Role: TEAM.md · Demo: DEMO.md · Slajdy: /slajdy (Ctrl+P → PDF)

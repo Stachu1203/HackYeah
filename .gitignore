@@ -1,1 +1,7 @@
+node_modules
+.next
+.config
+*.log
+.env*
+.DS_Store
 17b7999e-e2c0-42fd-8402-b008fb4b392c.pdf

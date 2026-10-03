@@ -1,0 +1,10 @@
+import { IssueDetailClient } from "@/components/IssueDetailClient";
+
+export default async function IssuePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return <IssueDetailClient issueId={id} />;
+}
