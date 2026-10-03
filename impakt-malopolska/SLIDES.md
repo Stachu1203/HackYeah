@@ -10,7 +10,7 @@ Skopiuj do Google Slides / Keynote. Język: **polski**.
    Oddolne inicjatywy giną. Urzędy dostają szum. Brak mostu: potrzeba ↔ sprawdzona innowacja ↔ formalny wniosek.
 
 3. **Rozwiązanie (1 zdanie + flow)**  
-   Mapa → upvote → AI matchmaking → wniosek art. 241 KPA → heatmapa instytucji
+   Zgłoszenie ze zdjęciami → głosy za/przeciw i komentarze → AI matchmaking → wniosek art. 241 KPA → heatmapa instytucji
 
 4. **Użytkownicy**  
    Mieszkańcy / NGO · JST · ROPS · eksperci
@@ -25,10 +25,10 @@ Skopiuj do Google Slides / Keynote. Język: **polski**.
    Screenshot `/admin` · trendy dla Marszałka / radnych
 
 8. **Dostępność i UX**  
-   PL, duży tekst, kontrast, lista + mapa, WCAG-ish
+   PL, duży tekst, kontrast, lista + mapa, wersja na telefon, ograniczenie animacji; kawaii mode zamiast dark mode
 
 9. **Tech + Opus 5.5**  
-   Vite + React, Flask REST API, SQLite (surowy SQL), embeddingi, Leaflet  
+   Vite + React, Flask REST API, SQLite (surowy SQL), embeddingi, Leaflet · moderacja JEV (LLM przez OpenRouter), konta, bany  
    *Budowaliśmy z Opus 5.5 jako asystentem implementacji i generatorem wniosków — walidacja i UX są nasze.*
 
 10. **Wdrożenie / koszt**  

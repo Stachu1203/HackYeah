@@ -14,7 +14,7 @@ const slides = [
   {
     n: 3,
     title: "Rozwiązanie",
-    body: "Mapa → upvote → AI matchmaking → wniosek art. 241 KPA → heatmapa instytucji",
+    body: "Zgłoszenie ze zdjęciami → głosy za/przeciw i komentarze → AI matchmaking → wniosek art. 241 KPA → heatmapa instytucji",
   },
   {
     n: 4,
@@ -39,12 +39,12 @@ const slides = [
   {
     n: 8,
     title: "Dostępność i UX",
-    body: "Polski interfejs · duży tekst · kontrast · lista obok mapy · focus keyboard",
+    body: "Polski interfejs · duży tekst · kontrast · lista obok mapy · wersja na telefon · focus keyboard · kawaii mode zamiast dark mode",
   },
   {
     n: 9,
     title: "Tech + Opus 5.5",
-    body: "Vite + React · Flask REST API · SQLite (surowy SQL) · embeddingi do matchmakingu · Leaflet\nBudowaliśmy z Opus 5.5 jako asystentem implementacji i generatorem wniosków — walidacja i UX są nasze.",
+    body: "Vite + React · Flask REST API · SQLite (surowy SQL) · embeddingi do matchmakingu · Leaflet · moderacja JEV (LLM przez OpenRouter)\nBudowaliśmy z Opus 5.5 jako asystentem implementacji i generatorem wniosków — walidacja i UX są nasze.",
   },
   {
     n: 10,
