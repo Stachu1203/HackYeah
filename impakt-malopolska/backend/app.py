@@ -194,7 +194,7 @@ def create_issue():
     if not verdict.allowed:
         abort(
             422,
-            description="JEV nie przepuścił zgłoszenia"
+            description="Zgłoszenie nie zostało zaakceptowane"
             + (f": {verdict.reason}" if verdict.reason else "")
             + ". Popraw treść i spróbuj ponownie.",
         )
