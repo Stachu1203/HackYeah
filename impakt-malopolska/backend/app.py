@@ -4,16 +4,22 @@ import json
 import time
 import uuid
 from datetime import timedelta
+from pathlib import Path
 
-from flask import Flask, abort, g, jsonify, request
+from dotenv import load_dotenv
 
-import auth
-import db
-import embeddings
-from auth import admin_required, login_required
-from matching import find_best_matches
-from petition import draft_petition
-from serializers import comment_to_json, innovation_to_json, issue_to_json
+# Przed importem db/auth — one czytają zmienne środowiskowe przy imporcie.
+load_dotenv(Path(__file__).resolve().parent / ".env")
+
+from flask import Flask, abort, g, jsonify, request  # noqa: E402
+
+import auth  # noqa: E402
+import db  # noqa: E402
+import embeddings  # noqa: E402
+from auth import admin_required, login_required  # noqa: E402
+from matching import find_best_matches  # noqa: E402
+from petition import draft_petition  # noqa: E402
+from serializers import comment_to_json, innovation_to_json, issue_to_json  # noqa: E402
 
 UPVOTE_THRESHOLD = 20
 CATEGORIES = {
