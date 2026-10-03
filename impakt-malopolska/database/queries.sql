@@ -1,0 +1,62 @@
+-- ImpaktMałopolska — zapytania używane przez backend.
+-- Każde zapytanie poprzedza znacznik "-- name: <nazwa>"; backend ładuje je po nazwie.
+-- Parametry nazwane w stylu SQLite (:param).
+
+-- name: list_issues
+SELECT id, title, description, category, latitude, longitude, location_name,
+       upvotes, status, image_url, author_name, created_at, keywords
+FROM issues
+ORDER BY created_at DESC;
+
+-- name: get_issue
+SELECT id, title, description, category, latitude, longitude, location_name,
+       upvotes, status, image_url, author_name, created_at, keywords, embedding
+FROM issues
+WHERE id = :id;
+
+-- name: insert_issue
+INSERT INTO issues (id, title, description, category, latitude, longitude,
+                    location_name, upvotes, status, image_url, author_name,
+                    created_at, keywords, embedding)
+VALUES (:id, :title, :description, :category, :latitude, :longitude,
+        :location_name, 1, 'DRAFT', :image_url, :author_name,
+        strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), :keywords, :embedding);
+
+-- name: upvote_issue
+UPDATE issues
+SET upvotes = upvotes + 1,
+    status  = CASE
+                  WHEN status = 'DRAFT' AND upvotes + 1 >= :threshold THEN 'READY_TO_SEND'
+                  ELSE status
+              END
+WHERE id = :id;
+
+-- name: mark_sent
+UPDATE issues SET status = 'SENT' WHERE id = :id;
+
+-- name: purge_old_issues
+DELETE FROM issues
+WHERE created_at < strftime('%Y-%m-%dT%H:%M:%SZ', 'now', :max_age);
+
+-- name: list_innovations
+SELECT id, title, source_municipality, description, category, keywords,
+       grant_hint, embedding
+FROM innovations;
+
+-- name: get_innovation
+SELECT id, title, source_municipality, description, category, keywords,
+       grant_hint
+FROM innovations
+WHERE id = :id;
+
+-- name: issues_missing_embedding
+SELECT id, title, description, keywords FROM issues WHERE embedding IS NULL;
+
+-- name: innovations_missing_embedding
+SELECT id, title, description, keywords FROM innovations WHERE embedding IS NULL;
+
+-- name: set_issue_embedding
+UPDATE issues SET embedding = :embedding WHERE id = :id;
+
+-- name: set_innovation_embedding
+UPDATE innovations SET embedding = :embedding WHERE id = :id;

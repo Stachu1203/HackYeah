@@ -14,6 +14,7 @@
 
 ## Pytania jury
 
-- Dane: localStorage + seed (bez Dockera) — docelowo Biblioteka Innowacji / Open Data.
+- Dane: Flask + SQLite (surowy SQL, seed), zgłoszenia wygasają po 7 dniach — docelowo Biblioteka Innowacji / Open Data.
+- Matchmaking: lokalne embeddingi (bez klucza API), podmienialne na model językowy.
 - Auth: demo role switch; produkcja = SSO urzędu.
-- Zdjęcia: FileReader data URL; produkcja = object storage.
+- Zdjęcia: data URL w SQLite; produkcja = object storage.

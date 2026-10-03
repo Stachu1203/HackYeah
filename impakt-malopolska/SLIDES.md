@@ -28,7 +28,7 @@ Skopiuj do Google Slides / Keynote. Język: **polski**.
    PL, duży tekst, kontrast, lista + mapa, WCAG-ish
 
 9. **Tech + Opus 5.5**  
-   Next.js, Leaflet, seed, API match/petition  
+   Vite + React, Flask REST API, SQLite (surowy SQL), embeddingi, Leaflet  
    *Budowaliśmy z Opus 5.5 jako asystentem implementacji i generatorem wniosków — walidacja i UX są nasze.*
 
 10. **Wdrożenie / koszt**  
