@@ -10,14 +10,19 @@ import type { Comment } from "../lib/types";
 import { timeAgo } from "./IssueFeed";
 
 const MAX_CHARS = 1000;
-const KAWAII_SUFFIX = " meow meow";
+const MEOW_SUFFIX = /(?:^|\s+)meow\s+meow[\s.!?♡]*$/i;
+
+/** Kawaii mode zawsze kończy komentarz na „meow meow”, zwykły tryb nigdy go nie pokazuje. */
+export function displayBody(body: string, kawaii: boolean): string {
+  const plain = body.replace(MEOW_SUFFIX, "");
+  if (kawaii) return plain ? `${plain} meow meow` : "meow meow";
+  return plain || "…";
+}
 
 export function CommentsSection({ issueId }: { issueId: string }) {
   const { user } = useAuth();
   const { refresh } = useIssues();
   const { kawaii } = useTheme();
-  // W kawaii mode serwer dopisuje „meow meow”, więc zostawiamy na to miejsce.
-  const maxChars = kawaii ? MAX_CHARS - KAWAII_SUFFIX.length : MAX_CHARS;
   const { pathname, hash } = useLocation();
   const [comments, setComments] = useState<Comment[] | null>(null);
   const [body, setBody] = useState("");
@@ -56,7 +61,7 @@ export function CommentsSection({ issueId }: { issueId: string }) {
     setBusy(true);
     setError(null);
     try {
-      const comment = await api.addComment(issueId, text, kawaii);
+      const comment = await api.addComment(issueId, text);
       setComments((prev) => [...(prev ?? []), comment]);
       setBody("");
       void refresh();
@@ -141,7 +146,7 @@ export function CommentsSection({ issueId }: { issueId: string }) {
                   )}
                 </div>
                 <p className="mt-1.5 whitespace-pre-wrap break-words text-[15px] leading-relaxed">
-                  {c.body}
+                  {displayBody(c.body, kawaii)}
                 </p>
               </motion.li>
             ))}
@@ -167,7 +172,7 @@ export function CommentsSection({ issueId }: { issueId: string }) {
             id="comment-body"
             rows={3}
             value={body}
-            maxLength={maxChars}
+            maxLength={MAX_CHARS}
             onChange={(e) => setBody(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void submit(e);
@@ -177,8 +182,7 @@ export function CommentsSection({ issueId }: { issueId: string }) {
           />
           <div className="mt-2 flex items-center justify-between gap-3">
             <span className="font-mono text-[12px] text-[var(--muted)]">
-              {body.length}/{maxChars}
-              {kawaii && <span className="ml-2 font-sans font-semibold text-[var(--riso-red)]">+ meow meow ♡</span>}
+              {body.length}/{MAX_CHARS}
             </span>
             <button
               type="submit"

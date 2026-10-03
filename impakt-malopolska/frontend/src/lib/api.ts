@@ -59,8 +59,8 @@ export const api = {
       { innovationId },
     ),
   comments: (id: string) => request<Comment[]>(`/issues/${id}/comments`),
-  addComment: (id: string, body: string, kawaii = false) =>
-    post<Comment>(`/issues/${id}/comments`, { body, kawaii }),
+  addComment: (id: string, body: string) =>
+    post<Comment>(`/issues/${id}/comments`, { body }),
   deleteComment: (commentId: string) =>
     request<{ ok: boolean }>(`/comments/${commentId}`, { method: "DELETE" }),
   reset: () => post<{ ok: boolean }>("/reset"),
