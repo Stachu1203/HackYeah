@@ -5,14 +5,19 @@ import { MessageCircle, Shield, Trash2 } from "lucide-react";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth-context";
 import { useIssues } from "../lib/issues-context";
+import { useTheme } from "../lib/theme";
 import type { Comment } from "../lib/types";
 import { timeAgo } from "./IssueFeed";
 
 const MAX_CHARS = 1000;
+const KAWAII_SUFFIX = " meow meow";
 
 export function CommentsSection({ issueId }: { issueId: string }) {
   const { user } = useAuth();
   const { refresh } = useIssues();
+  const { kawaii } = useTheme();
+  // W kawaii mode serwer dopisuje „meow meow”, więc zostawiamy na to miejsce.
+  const maxChars = kawaii ? MAX_CHARS - KAWAII_SUFFIX.length : MAX_CHARS;
   const { pathname, hash } = useLocation();
   const [comments, setComments] = useState<Comment[] | null>(null);
   const [body, setBody] = useState("");
@@ -51,7 +56,7 @@ export function CommentsSection({ issueId }: { issueId: string }) {
     setBusy(true);
     setError(null);
     try {
-      const comment = await api.addComment(issueId, text);
+      const comment = await api.addComment(issueId, text, kawaii);
       setComments((prev) => [...(prev ?? []), comment]);
       setBody("");
       void refresh();
@@ -162,7 +167,7 @@ export function CommentsSection({ issueId }: { issueId: string }) {
             id="comment-body"
             rows={3}
             value={body}
-            maxLength={MAX_CHARS}
+            maxLength={maxChars}
             onChange={(e) => setBody(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void submit(e);
@@ -172,7 +177,8 @@ export function CommentsSection({ issueId }: { issueId: string }) {
           />
           <div className="mt-2 flex items-center justify-between gap-3">
             <span className="font-mono text-[12px] text-[var(--muted)]">
-              {body.length}/{MAX_CHARS}
+              {body.length}/{maxChars}
+              {kawaii && <span className="ml-2 font-sans font-semibold text-[var(--riso-red)]">+ meow meow ♡</span>}
             </span>
             <button
               type="submit"

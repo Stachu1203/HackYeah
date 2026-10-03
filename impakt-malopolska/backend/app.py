@@ -21,6 +21,7 @@ CATEGORIES = {
     "ACCESSIBILITY", "HEALTH", "COMMUNITY",
 }
 MAX_COMMENT_CHARS = 1000
+KAWAII_SUFFIX = "meow meow"
 MAX_IMAGE_CHARS = 2_100_000  # ~1.5 MB pliku po zakodowaniu base64
 PURGE_INTERVAL_S = 60
 
@@ -212,6 +213,9 @@ def add_comment(issue_id):
     body = str(data.get("body", "")).strip()
     if not body:
         abort(400, description="Komentarz nie może być pusty")
+    # Komentarze pisane w kawaii mode kończą się na „meow meow”.
+    if data.get("kawaii") is True and not body.lower().endswith(KAWAII_SUFFIX):
+        body = f"{body} {KAWAII_SUFFIX}"
     if len(body) > MAX_COMMENT_CHARS:
         abort(400, description=f"Komentarz może mieć najwyżej {MAX_COMMENT_CHARS} znaków")
 
