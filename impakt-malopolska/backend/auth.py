@@ -35,12 +35,42 @@ def load_secret_key() -> str:
 
 
 def user_to_json(row: sqlite3.Row) -> dict:
+    location = None
+    if row["latitude"] is not None and row["longitude"] is not None:
+        location = {
+            "name": row["location_name"] or "Moja okolica",
+            "latitude": row["latitude"],
+            "longitude": row["longitude"],
+        }
     return {
         "id": row["id"],
         "username": row["username"],
         "displayName": row["display_name"],
         "role": row["role"],
+        "location": location,
+        "banned": row["banned_at"] is not None,
+        "banReason": row["ban_reason"],
     }
+
+
+def parse_location(data: dict) -> tuple[str | None, float | None, float | None]:
+    """Opcjonalna lokalizacja {locationName, latitude, longitude}; brak = (None, None, None)."""
+    lat, lng = data.get("latitude"), data.get("longitude")
+    if lat is None and lng is None:
+        return None, None, None
+    try:
+        lat, lng = float(lat), float(lng)
+    except (TypeError, ValueError):
+        abort(400, description="Niepoprawna lokalizacja")
+    if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+        abort(400, description="Niepoprawna lokalizacja")
+    name = str(data.get("locationName") or "").strip()[:120] or None
+    return name, lat, lng
+
+
+def _ban_message(row: sqlite3.Row) -> str:
+    reason = f" Powód: {row['ban_reason']}" if row["ban_reason"] else ""
+    return f"Konto zostało zablokowane przez urząd.{reason}"
 
 
 def load_current_user() -> None:
@@ -57,6 +87,8 @@ def login_required(view):
     def wrapped(*args, **kwargs):
         if g.user is None:
             abort(401, description="Zaloguj się, żeby to zrobić")
+        if g.user["banned_at"] is not None:
+            abort(403, description=_ban_message(g.user))
         return view(*args, **kwargs)
 
     return wrapped
@@ -91,6 +123,7 @@ def register():
     username = str(data.get("username", "")).strip()
     password = str(data.get("password", ""))
     display_name = str(data.get("displayName") or "").strip()[:60] or username
+    location_name, latitude, longitude = parse_location(data)
 
     if not USERNAME_RE.match(username):
         abort(400, description="Login: 3–32 znaki, litery, cyfry, _ . -")
@@ -108,6 +141,9 @@ def register():
                 "display_name": display_name,
                 "password_hash": generate_password_hash(password),
                 "role": "user",
+                "location_name": location_name,
+                "latitude": latitude,
+                "longitude": longitude,
             },
         )
     except sqlite3.IntegrityError:
@@ -129,9 +165,25 @@ def login():
     password_hash = row["password_hash"] if row else _DUMMY_HASH
     if not check_password_hash(password_hash, password) or row is None:
         abort(401, description="Nieprawidłowy login lub hasło")
+    if row["banned_at"] is not None:
+        abort(403, description=_ban_message(row))
 
     _start_session(row["id"])
     return jsonify({"user": user_to_json(row)})
+
+
+@bp.put("/me/location")
+@login_required
+def update_location():
+    name, lat, lng = parse_location(request.get_json(silent=True) or {})
+    conn = db.get_db()
+    conn.execute(
+        db.Q["update_user_location"],
+        {"id": g.user["id"], "location_name": name, "latitude": lat, "longitude": lng},
+    )
+    conn.commit()
+    user = conn.execute(db.Q["get_user_by_id"], {"id": g.user["id"]}).fetchone()
+    return jsonify({"user": user_to_json(user)})
 
 
 @bp.post("/logout")

@@ -1,4 +1,15 @@
-import type { Comment, Innovation, Issue, IssueCategory, PetitionDraft, User } from "./types";
+import type {
+  AbuseReport,
+  BannedUser,
+  Comment,
+  Innovation,
+  Issue,
+  IssueCategory,
+  PetitionDraft,
+  Place,
+  User,
+  Vote,
+} from "./types";
 
 export type AddIssueInput = {
   title: string;
@@ -7,14 +18,21 @@ export type AddIssueInput = {
   latitude: number;
   longitude: number;
   locationName: string;
-  imageUrl: string | null;
+  /** data URL-e zdjęć, najwyżej 4 */
+  images: string[];
 };
 
 export type RegisterInput = {
   username: string;
   password: string;
   displayName?: string;
+  location?: Place | null;
 };
+
+const placeBody = (place: Place | null | undefined) =>
+  place
+    ? { locationName: place.name, latitude: place.latitude, longitude: place.longitude }
+    : {};
 
 /** Błąd API z kodem HTTP — 401 oznacza brak zalogowania. */
 export class ApiError extends Error {
@@ -47,9 +65,19 @@ export const api = {
   listIssues: () => request<Issue[]>("/issues"),
   getIssue: (id: string) => request<Issue>(`/issues/${id}`),
   createIssue: (input: AddIssueInput) => post<Issue>("/issues", input),
-  upvote: (id: string) => post<Issue>(`/issues/${id}/upvote`),
-  removeUpvote: (id: string) =>
-    request<Issue>(`/issues/${id}/upvote`, { method: "DELETE" }),
+  vote: (id: string, value: Vote) =>
+    request<Issue>(`/issues/${id}/vote`, { method: "PUT", body: JSON.stringify({ value }) }),
+  deleteIssue: (id: string) => request<{ ok: boolean }>(`/issues/${id}`, { method: "DELETE" }),
+  report: (target: { issueId: string } | { commentId: string }, reason: string) =>
+    post<{ ok: boolean }>("/reports", { ...target, reason }),
+  adminReports: () => request<AbuseReport[]>("/admin/reports"),
+  dismissReport: (id: string) => post<{ ok: boolean }>(`/admin/reports/${id}/dismiss`),
+  resolveReport: (
+    id: string,
+    action: { deleteContent?: boolean; banAuthor?: boolean; banReason?: string },
+  ) => post<{ ok: boolean }>(`/admin/reports/${id}/resolve`, action),
+  adminBans: () => request<BannedUser[]>("/admin/bans"),
+  unban: (userId: string) => post<{ ok: boolean }>(`/admin/users/${userId}/unban`),
   markSent: (id: string) => post<Issue>(`/issues/${id}/sent`),
   matches: (id: string) =>
     request<{ matches: Match[]; best: Match | null }>(`/issues/${id}/matches`),
@@ -67,6 +95,12 @@ export const api = {
   me: () => request<{ user: User | null }>("/auth/me"),
   login: (username: string, password: string) =>
     post<{ user: User }>("/auth/login", { username, password }),
-  register: (input: RegisterInput) => post<{ user: User }>("/auth/register", input),
+  register: ({ location, ...input }: RegisterInput) =>
+    post<{ user: User }>("/auth/register", { ...input, ...placeBody(location) }),
+  updateLocation: (place: Place | null) =>
+    request<{ user: User }>("/auth/me/location", {
+      method: "PUT",
+      body: JSON.stringify(placeBody(place)),
+    }),
   logout: () => post<{ ok: boolean }>("/auth/logout"),
 };

@@ -54,6 +54,26 @@ def close_db(_exc=None) -> None:
         db.close()
 
 
+# Kolumny dodane do users po pierwszej wersji — SQLite nie ma ADD COLUMN IF NOT EXISTS.
+USER_COLUMNS = {
+    "location_name": "TEXT",
+    "latitude": "REAL",
+    "longitude": "REAL",
+    "banned_at": "TEXT",
+    "ban_reason": "TEXT",
+}
+
+
+def migrate_users(conn: sqlite3.Connection) -> None:
+    existing = {row["name"] for row in conn.execute("PRAGMA table_info(users)")}
+    if not existing:
+        return  # tabeli jeszcze nie ma — utworzy ją schema.sql
+    for column, sql_type in USER_COLUMNS.items():
+        if column not in existing:
+            conn.execute(f"ALTER TABLE users ADD COLUMN {column} {sql_type}")
+    conn.commit()
+
+
 def reset_database(conn: sqlite3.Connection) -> None:
     """Odtwarza schemat i wgrywa seed."""
     conn.executescript((SQL_DIR / "schema.sql").read_text(encoding="utf-8"))
@@ -98,10 +118,11 @@ def purge_old_issues(conn: sqlite3.Connection) -> int:
 def init_if_needed() -> None:
     conn = connect()
     try:
-        # Tabela comments doszła najpóźniej — jej brak oznacza starą bazę do odtworzenia
+        migrate_users(conn)
+        # Tabela reports doszła najpóźniej — jej brak oznacza starą bazę do odtworzenia
         # (konta w tabeli users przeżywają odtworzenie).
         has_schema = conn.execute(
-            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'comments'"
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'reports'"
         ).fetchone()
         if not has_schema:
             reset_database(conn)

@@ -9,6 +9,7 @@ import {
   Shield,
 } from "lucide-react";
 import { IssuesMap } from "../components/IssuesMap";
+import { ModerationPanel } from "../components/ModerationPanel";
 import { useIssues } from "../lib/issues-context";
 import { useAuth } from "../lib/auth-context";
 import { CATEGORY_LABELS, UPVOTE_THRESHOLD } from "../lib/types";
@@ -26,20 +27,20 @@ export function AdminPage() {
 
   const filtered = useMemo(() => {
     return issues.filter((i) => {
-      if (filter === "READY") return i.upvotes >= UPVOTE_THRESHOLD && i.status !== "SENT";
+      if (filter === "READY") return i.score >= UPVOTE_THRESHOLD && i.status !== "SENT";
       if (filter === "SENT") return i.status === "SENT";
-      if (filter === "DRAFT") return i.status === "DRAFT" && i.upvotes < UPVOTE_THRESHOLD;
+      if (filter === "DRAFT") return i.status === "DRAFT" && i.score < UPVOTE_THRESHOLD;
       return true;
     });
   }, [issues, filter]);
 
   const hot = useMemo(
-    () => [...filtered].sort((a, b) => b.upvotes - a.upvotes),
+    () => [...filtered].sort((a, b) => b.score - a.score),
     [filtered],
   );
 
   const readyCount = issues.filter(
-    (i) => i.upvotes >= UPVOTE_THRESHOLD && i.status !== "SENT",
+    (i) => i.score >= UPVOTE_THRESHOLD && i.status !== "SENT",
   ).length;
   const sentCount = issues.filter((i) => i.status === "SENT").length;
   const totalVotes = issues.reduce((s, i) => s + i.upvotes, 0);
@@ -49,7 +50,7 @@ export function AdminPage() {
     for (const issue of issues) {
       const area =
         issue.locationName.split("—")[0]?.trim() ?? issue.locationName;
-      map.set(area, (map.get(area) ?? 0) + issue.upvotes);
+      map.set(area, (map.get(area) ?? 0) + Math.max(0, issue.score));
     }
     return [...map.entries()].sort((a, b) => b[1] - a[1]);
   }, [issues]);
@@ -212,7 +213,7 @@ export function AdminPage() {
             <ul className="mt-3 max-h-[320px] space-y-2 overflow-y-auto">
               {hot.map((issue) => {
                 const src =
-                  issue.imageUrl ||
+                  issue.images[0] ||
                   categoryPlaceholder(issue.category, issue.title);
                 return (
                   <li key={issue.id}>
@@ -233,12 +234,12 @@ export function AdminPage() {
                           </span>
                           <span className="mt-0.5 block text-[12px] text-[var(--muted)]">
                             {issue.locationName} ·{" "}
-                            {CATEGORY_LABELS[issue.category]} · {issue.upvotes}
+                            {CATEGORY_LABELS[issue.category]} · wynik {issue.score}
                           </span>
                         </span>
                       </button>
                       {issue.status !== "SENT" &&
-                        issue.upvotes >= UPVOTE_THRESHOLD && (
+                        issue.score >= UPVOTE_THRESHOLD && (
                           <button
                             type="button"
                             onClick={() => void markSent(issue.id)}
@@ -256,6 +257,9 @@ export function AdminPage() {
             </ul>
           </div>
         </div>
+      </div>
+      <div className="mt-8">
+        <ModerationPanel />
       </div>
     </div>
   );

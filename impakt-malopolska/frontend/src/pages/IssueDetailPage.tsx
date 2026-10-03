@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, FileText, MapPin, Send, Sparkles } from "lucide-react";
+import { ArrowLeft, FileText, MapPin, Send, Sparkles, Trash2 } from "lucide-react";
 import { api, type Match } from "../lib/api";
 import { useIssues } from "../lib/issues-context";
-import type { PetitionDraft } from "../lib/types";
+import type { PetitionDraft, Vote } from "../lib/types";
 import { CATEGORY_LABELS, UPVOTE_THRESHOLD } from "../lib/types";
 import { CATEGORY_COLORS, CATEGORY_ICONS } from "../lib/category-ui";
 import { categoryPlaceholder } from "../lib/placeholders";
 import { VoteButton } from "../components/VoteButton";
+import { ImageCarousel } from "../components/ImageCarousel";
+import { ReportButton } from "../components/ReportButton";
+import { useKawaiiText } from "../lib/kawaii";
 import { CommentsSection } from "../components/CommentsSection";
 import { timeAgo } from "../components/IssueFeed";
 
@@ -20,7 +23,10 @@ const STATUS_LABELS = {
 
 export function IssueDetailPage() {
   const { id: issueId = "" } = useParams();
-  const { issues, ready, toggleVote, markSent } = useIssues();
+  const { issues, ready, vote, markSent, removeIssue } = useIssues();
+  const navigate = useNavigate();
+  const k = useKawaiiText();
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const issue = issues.find((i) => i.id === issueId);
   const [matches, setMatches] = useState<Match[]>([]);
   const [petition, setPetition] = useState<PetitionDraft | null>(null);
@@ -47,11 +53,21 @@ export function IssueDetailPage() {
     setTimeout(() => setToast(null), 3000);
   }
 
-  async function handleToggleVote(id: string) {
+  async function handleVote(id: string, value: Vote) {
     try {
-      await toggleVote(id);
+      await vote(id, value);
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Nie udało się zagłosować");
+    }
+  }
+
+  async function handleDelete() {
+    if (!issue) return;
+    try {
+      await removeIssue(issue.id);
+      navigate("/", { replace: true });
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Nie udało się usunąć zgłoszenia");
     }
   }
 
@@ -83,7 +99,7 @@ export function IssueDetailPage() {
   if (!ready) {
     return (
       <p role="status" className="py-16 text-center font-display text-[18px] italic text-[var(--muted)]">
-        Szukamy kartki…
+        {k("Szukamy kartki…", "Chotto matte… ちょっと待って")}
       </p>
     );
   }
@@ -110,9 +126,8 @@ export function IssueDetailPage() {
 
   const Icon = CATEGORY_ICONS[issue.category];
   const colors = CATEGORY_COLORS[issue.category];
-  const src =
-    issue.imageUrl || categoryPlaceholder(issue.category, issue.title);
-  const progress = Math.min(1, issue.upvotes / UPVOTE_THRESHOLD);
+  const fallback = categoryPlaceholder(issue.category, issue.title);
+  const progress = Math.min(1, Math.max(0, issue.score) / UPVOTE_THRESHOLD);
 
   return (
     <div className="mx-auto w-full max-w-lg px-4 pb-20 pt-6">
@@ -127,7 +142,7 @@ export function IssueDetailPage() {
       <div className="paper-card -rotate-[0.6deg] p-3">
         <span className="tape" aria-hidden />
         <div className="relative overflow-hidden rounded-xl border-2 border-[var(--ink)]">
-          <img src={src} alt="" className="aspect-[4/3] w-full bg-[var(--wash)] object-cover" />
+          <ImageCarousel images={issue.images} fallback={fallback} label={issue.title} />
           {issue.status !== "DRAFT" && (
             <span
               className={`stamp absolute bottom-4 right-4 text-[13px] ${
@@ -161,24 +176,52 @@ export function IssueDetailPage() {
             <MapPin className="h-4 w-4 shrink-0" aria-hidden />
             {issue.locationName} · {issue.authorName} · {timeAgo(issue.createdAt)}
           </p>
+          <div className="mt-2 flex flex-wrap items-center gap-1">
+            {/* autor i urząd mogą usunąć — zgłaszanie jest dla pozostałych */}
+            {!issue.canDelete && <ReportButton target={{ issueId: issue.id }} label={issue.title} />}
+            {issue.canDelete &&
+              (confirmDelete ? (
+                <span className="inline-flex items-center gap-2 rounded-full border-2 border-[var(--ink)] bg-[#fbd3c9] px-3 py-1 text-[13px] font-bold">
+                  Usunąć na pewno?
+                  <button type="button" onClick={() => void handleDelete()} className="underline">
+                    Tak
+                  </button>
+                  <button type="button" onClick={() => setConfirmDelete(false)} className="underline">
+                    Nie
+                  </button>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(true)}
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[13px] font-semibold text-[var(--muted)] transition hover:text-[var(--riso-red)]"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden />
+                  Usuń zgłoszenie
+                </button>
+              ))}
+          </div>
           <p className="mt-4 text-[17px] leading-relaxed text-[var(--ink)] sm:text-[18px]">
             {issue.description}
           </p>
 
           <div className="paper-card mt-6 flex flex-wrap items-center gap-4 p-4">
-            <VoteButton issue={issue} onToggle={handleToggleVote} size="lg" />
+            <VoteButton issue={issue} onVote={handleVote} size="lg" />
             <div className="min-w-[10rem] flex-1">
               <p className="text-[13px] font-bold">
-                {issue.upvotes >= UPVOTE_THRESHOLD
-                  ? "Próg wniosku osiągnięty"
-                  : `Do progu wniosku: ${UPVOTE_THRESHOLD - issue.upvotes}`}
+                {issue.score >= UPVOTE_THRESHOLD
+                  ? k("Próg wniosku osiągnięty", "Próg osiągnięty! すごい ✧")
+                  : `Do progu wniosku: ${UPVOTE_THRESHOLD - issue.score}`}
+              </p>
+              <p className="text-[12px] text-[var(--muted)]">
+                ▲ {issue.upvotes} za · ▼ {issue.downvotes} przeciw
               </p>
               <div
                 className="mt-1.5 h-3 overflow-hidden rounded-full border-2 border-[var(--ink)] bg-[var(--surface)]"
                 role="progressbar"
                 aria-valuemin={0}
                 aria-valuemax={UPVOTE_THRESHOLD}
-                aria-valuenow={Math.min(issue.upvotes, UPVOTE_THRESHOLD)}
+                aria-valuenow={Math.min(Math.max(0, issue.score), UPVOTE_THRESHOLD)}
                 aria-label="Poparcie do progu wniosku"
               >
                 <motion.div

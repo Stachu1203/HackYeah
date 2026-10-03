@@ -1,8 +1,11 @@
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LogIn, UserPlus } from "lucide-react";
+import { Home, LogIn, UserPlus } from "lucide-react";
 import { useAuth } from "../lib/auth-context";
+import { useKawaiiText } from "../lib/kawaii";
+import { PlacePicker } from "../components/PlacePicker";
+import type { Place } from "../lib/types";
 
 type Mode = "login" | "register";
 
@@ -12,7 +15,11 @@ const LABEL =
   "block text-[12px] font-extrabold uppercase tracking-[0.14em] text-[var(--ink)]";
 
 export function LoginPage() {
-  const { user, login, register, logout } = useAuth();
+  const { user, login, register, logout, updateLocation } = useAuth();
+  const k = useKawaiiText();
+  const [place, setPlace] = useState<Place | null>(null);
+  const [editPlace, setEditPlace] = useState<Place | null | undefined>(undefined);
+  const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? "/";
@@ -37,6 +44,7 @@ export function LoginPage() {
               username: username.trim(),
               password,
               displayName: displayName.trim() || undefined,
+              location: place,
             });
       navigate(u.role === "admin" && from === "/" ? "/admin" : from, { replace: true });
     } catch (err) {
@@ -46,16 +54,84 @@ export function LoginPage() {
     }
   }
 
+  async function saveLocation() {
+    setError(null);
+    setSavedMsg(null);
+    try {
+      await updateLocation(editPlace ?? null);
+      setEditPlace(undefined);
+      setSavedMsg(k("Zapisano — tablica pokaże zgłoszenia z tej okolicy.", "Zapisano! ありがとう ♡"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Nie udało się zapisać");
+    }
+  }
+
   if (user) {
+    const editing = editPlace !== undefined;
     return (
-      <div className="mx-auto w-full max-w-md px-4 py-14">
-        <div className="paper-card p-8 text-center">
+      <div className="mx-auto w-full max-w-md px-4 py-10">
+        <div className="paper-card p-6 sm:p-8">
           <span className="tape" aria-hidden />
-          <p className="font-display text-[28px] font-black italic">Cześć, {user.displayName}!</p>
-          <p className="mt-2 text-[15px] text-[var(--muted)]">
+          <p className="text-center font-display text-[28px] font-black italic">
+            {k(`Cześć, ${user.displayName}!`, `Okaeri, ${user.displayName}! おかえり ♡`)}
+          </p>
+          <p className="mt-2 text-center text-[15px] text-[var(--muted)]">
             Jesteś zalogowany jako <strong>{user.username}</strong>
             {user.role === "admin" ? " (urząd)" : ""}.
           </p>
+
+          <section className="mt-6 rounded-2xl border-2 border-[var(--ink)] bg-[var(--surface)] p-4" aria-labelledby="home-heading">
+            <h2 id="home-heading" className="flex items-center gap-2 text-[12px] font-extrabold uppercase tracking-[0.14em]">
+              <Home className="h-4 w-4" aria-hidden />
+              Moja okolica
+            </h2>
+            {editing ? (
+              <div className="mt-3 space-y-3">
+                <PlacePicker value={editPlace ?? null} onChange={setEditPlace} allowClear />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void saveLocation()}
+                    className="ink-btn rounded-full bg-[var(--riso-mint)] px-4 py-1.5 text-[14px] font-bold text-[var(--surface)]"
+                  >
+                    Zapisz
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditPlace(undefined)}
+                    className="rounded-full px-3 py-1.5 text-[14px] font-semibold underline"
+                  >
+                    Anuluj
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[15px]">
+                  {user.location
+                    ? `📍 ${user.location.name} — tablica domyślnie pokazuje zgłoszenia do 25 km stąd`
+                    : "Nie ustawiono — tablica pokazuje całą Małopolskę"}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSavedMsg(null);
+                    setEditPlace(user.location);
+                  }}
+                  className="ink-btn rounded-full bg-[var(--riso-yellow)] px-3 py-1 text-[13px] font-bold"
+                >
+                  {user.location ? "Zmień" : "Ustaw"}
+                </button>
+              </div>
+            )}
+            {savedMsg && <p className="mt-2 text-[13px] font-semibold text-[var(--riso-mint)]">{savedMsg}</p>}
+            {error && (
+              <p role="alert" className="mt-2 text-[13px] font-semibold text-[var(--riso-red)]">
+                {error}
+              </p>
+            )}
+          </section>
+
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link
               to={user.role === "admin" ? "/admin" : "/"}
@@ -85,9 +161,13 @@ export function LoginPage() {
       </p>
       <h1 className="font-display text-[44px] font-black italic leading-none tracking-tight">
         <span className="squiggle">{isLogin ? "Zaloguj się" : "Załóż konto"}</span>
+        {k("", " ♡")}
       </h1>
       <p className="mt-4 text-[15px] text-[var(--ink)]/75">
-        Konto pozwala dodawać zgłoszenia i popierać je — jeden głos na osobę.
+        {k(
+          "Konto pozwala dodawać zgłoszenia, głosować za i przeciw — jeden głos na osobę.",
+          "Yōkoso! ようこそ — z kontem dodasz zgłoszenia i zagłosujesz (jeden głos na osobę).",
+        )}
       </p>
 
       <div
@@ -166,6 +246,15 @@ export function LoginPage() {
             minLength={isLogin ? undefined : 8}
           />
         </label>
+        {!isLogin && (
+          <fieldset className="space-y-2">
+            <legend className={LABEL}>Twoja okolica (opcjonalnie)</legend>
+            <p className="text-[13px] text-[var(--muted)]">
+              Tablica pokaże najpierw zgłoszenia z okolicy. Możesz to później zmienić.
+            </p>
+            <PlacePicker value={place} onChange={setPlace} allowClear />
+          </fieldset>
+        )}
         {!isLogin && (
           <p className="text-[13px] text-[var(--muted)]">
             Login: 3–32 znaki (litery, cyfry, _ . -). Hasło: co najmniej 8 znaków.

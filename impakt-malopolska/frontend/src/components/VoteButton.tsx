@@ -1,79 +1,109 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Heart } from "lucide-react";
+import { ArrowBigDown, ArrowBigUp } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth-context";
-import type { Issue } from "../lib/types";
+import { useKawaiiText } from "../lib/kawaii";
+import type { Issue, Vote } from "../lib/types";
 
 type Props = {
   issue: Issue;
-  onToggle: (id: string) => Promise<unknown>;
+  onVote: (id: string, value: Vote) => Promise<unknown>;
   size?: "md" | "lg";
 };
 
-/** Poparcie zgłoszenia — jeden głos na konto, drugie kliknięcie cofa głos. Bez konta prowadzi do logowania. */
-export function VoteButton({ issue, onToggle, size = "md" }: Props) {
+/**
+ * Głos za / przeciw — jeden na konto. Kliknięcie aktywnej strzałki cofa głos.
+ * Bez konta prowadzi do logowania.
+ */
+export function VoteButton({ issue, onVote, size = "md" }: Props) {
   const [pending, setPending] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const k = useKawaiiText();
+  const big = size === "lg";
 
-  async function handleClick() {
+  async function cast(direction: 1 | -1) {
     if (pending) return;
     if (!user) {
-      // Głosować można tylko z konta — jeden głos na osobę.
       navigate("/logowanie", { state: { from: pathname } });
       return;
     }
     setPending(true);
     try {
-      await onToggle(issue.id);
+      await onVote(issue.id, issue.myVote === direction ? 0 : direction);
     } finally {
       setPending(false);
     }
   }
 
-  const big = size === "lg";
+  const arrow = big ? "h-6 w-6" : "h-5 w-5";
+  const btn = `flex items-center justify-center rounded-full transition disabled:cursor-wait ${
+    big ? "h-10 w-10" : "h-8 w-8"
+  }`;
 
   return (
-    <motion.button
-      type="button"
-      onClick={handleClick}
-      disabled={pending}
-      aria-pressed={issue.voted}
-      aria-label={
-        issue.voted
-          ? `Cofnij poparcie: ${issue.title} (${issue.upvotes} głosów)`
-          : `Poprzyj: ${issue.title} (${issue.upvotes} głosów)`
-      }
-      whileTap={{ scale: 0.92 }}
-      className={`ink-btn inline-flex items-center gap-2 rounded-full font-bold disabled:cursor-wait ${
-        big ? "px-5 py-2.5 text-[17px]" : "px-3.5 py-1.5 text-[15px]"
-      } ${
-        issue.voted
-          ? "bg-[var(--riso-red)] text-[var(--surface)]"
-          : "bg-[var(--surface)] text-[var(--ink)]"
+    <div
+      className={`ink-btn inline-flex items-center rounded-full bg-[var(--surface)] p-0.5 ${
+        big ? "gap-1" : ""
       }`}
+      role="group"
+      aria-label={`Głosowanie: wynik ${issue.score}`}
     >
-      <motion.span
-        key={issue.voted ? "on" : "off"}
-        initial={{ scale: 0.6, rotate: -20 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{ type: "spring", stiffness: 500, damping: 15 }}
-        className="flex"
+      <motion.button
+        type="button"
+        whileTap={{ scale: 0.85 }}
+        onClick={() => void cast(1)}
+        disabled={pending}
+        aria-pressed={issue.myVote === 1}
+        aria-label={issue.myVote === 1 ? "Cofnij głos za" : `Głosuj za: ${issue.title}`}
+        title={k("Popieram", "Popieram ♡ いいね!")}
+        className={`${btn} ${
+          issue.myVote === 1
+            ? "bg-[var(--riso-red)] text-[var(--surface)]"
+            : "text-[var(--riso-red)] hover:bg-[var(--wash)]"
+        }`}
       >
-        <Heart
-          className={big ? "h-5 w-5" : "h-4 w-4"}
-          fill={issue.voted ? "currentColor" : "transparent"}
-          color={issue.voted ? "currentColor" : "var(--riso-red)"}
-          strokeWidth={2.5}
+        <ArrowBigUp
+          className={arrow}
+          fill={issue.myVote === 1 ? "currentColor" : "transparent"}
+          strokeWidth={2.2}
           aria-hidden
         />
+      </motion.button>
+      <motion.span
+        key={issue.score}
+        initial={{ y: -6, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className={`min-w-[2ch] text-center font-bold tabular-nums ${big ? "text-[19px]" : "text-[15px]"} ${
+          issue.score < 0 ? "text-[var(--riso-blue)]" : ""
+        }`}
+        aria-live="polite"
+      >
+        {issue.score}
       </motion.span>
-      <span className="tabular-nums">{issue.upvotes}</span>
-      <span className={big ? "" : "hidden sm:inline"}>
-        {issue.voted ? "Popierasz" : "Popieram"}
-      </span>
-    </motion.button>
+      <motion.button
+        type="button"
+        whileTap={{ scale: 0.85 }}
+        onClick={() => void cast(-1)}
+        disabled={pending}
+        aria-pressed={issue.myVote === -1}
+        aria-label={issue.myVote === -1 ? "Cofnij głos przeciw" : `Głosuj przeciw: ${issue.title}`}
+        title={k("Nie popieram", "Nie popieram (´・ω・`)")}
+        className={`${btn} ${
+          issue.myVote === -1
+            ? "bg-[var(--riso-blue)] text-[var(--surface)]"
+            : "text-[var(--riso-blue)] hover:bg-[var(--wash)]"
+        }`}
+      >
+        <ArrowBigDown
+          className={arrow}
+          fill={issue.myVote === -1 ? "currentColor" : "transparent"}
+          strokeWidth={2.2}
+          aria-hidden
+        />
+      </motion.button>
+    </div>
   );
 }

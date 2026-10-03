@@ -18,15 +18,28 @@ export interface Issue {
   longitude: number;
   locationName: string;
   upvotes: number;
+  downvotes: number;
+  /** wynik netto: upvotes − downvotes; od niego liczony próg wniosku */
+  score: number;
   status: IssueStatus;
-  /** data URL or remote URL — photo of the problem */
-  imageUrl: string | null;
+  /** adresy zdjęć (/api/images/…), najwyżej 4 */
+  images: string[];
   authorName: string;
   createdAt: string;
   keywords: string[];
-  /** czy bieżąca przeglądarka już poparła zgłoszenie */
-  voted: boolean;
+  /** głos zalogowanej osoby: 1, -1 albo 0 */
+  myVote: Vote;
   commentsCount: number;
+  /** autor albo urząd może usunąć */
+  canDelete: boolean;
+}
+
+export type Vote = 1 | -1 | 0;
+
+export interface Place {
+  name: string;
+  latitude: number;
+  longitude: number;
 }
 
 export interface Comment {
@@ -45,6 +58,30 @@ export interface User {
   username: string;
   displayName: string;
   role: "user" | "admin";
+  /** miejsce zamieszkania — domyślny filtr tablicy */
+  location: Place | null;
+  banned: boolean;
+  banReason: string | null;
+}
+
+export interface AbuseReport {
+  id: string;
+  reason: string;
+  createdAt: string;
+  reporterName: string;
+  issueId: string | null;
+  issueTitle: string | null;
+  commentId: string | null;
+  commentBody: string | null;
+  target: { id: string; displayName: string; username: string; banned: boolean } | null;
+}
+
+export interface BannedUser {
+  id: string;
+  username: string;
+  displayName: string;
+  bannedAt: string;
+  reason: string | null;
 }
 
 export interface Innovation {

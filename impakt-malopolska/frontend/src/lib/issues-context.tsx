@@ -9,7 +9,7 @@ import {
 } from "react";
 import { api, type AddIssueInput } from "./api";
 import { useAuth } from "./auth-context";
-import type { Issue } from "./types";
+import type { Issue, Vote } from "./types";
 
 type IssuesContextValue = {
   issues: Issue[];
@@ -17,8 +17,9 @@ type IssuesContextValue = {
   error: string | null;
   refresh: () => Promise<void>;
   addIssue: (input: AddIssueInput) => Promise<Issue>;
-  /** Popiera albo cofa poparcie — jeden głos na przeglądarkę. */
-  toggleVote: (id: string) => Promise<Issue>;
+  /** Głos konta: 1 za, -1 przeciw, 0 cofnięcie. */
+  vote: (id: string, value: Vote) => Promise<Issue>;
+  removeIssue: (id: string) => Promise<void>;
   markSent: (id: string) => Promise<Issue>;
   reset: () => Promise<void>;
 };
@@ -59,15 +60,15 @@ export function IssuesProvider({ children }: { children: ReactNode }) {
     return issue;
   }, []);
 
-  const toggleVote = useCallback(
-    async (id: string) => {
-      const current = issues.find((i) => i.id === id);
-      return replace(
-        await (current?.voted ? api.removeUpvote(id) : api.upvote(id)),
-      );
-    },
-    [issues, replace],
+  const vote = useCallback(
+    async (id: string, value: Vote) => replace(await api.vote(id, value)),
+    [replace],
   );
+
+  const removeIssue = useCallback(async (id: string) => {
+    await api.deleteIssue(id);
+    setIssues((prev) => prev.filter((i) => i.id !== id));
+  }, []);
 
   const markSent = useCallback(
     async (id: string) => replace(await api.markSent(id)),
@@ -80,8 +81,8 @@ export function IssuesProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const value = useMemo(
-    () => ({ issues, ready, error, refresh, addIssue, toggleVote, markSent, reset }),
-    [issues, ready, error, refresh, addIssue, toggleVote, markSent, reset],
+    () => ({ issues, ready, error, refresh, addIssue, vote, removeIssue, markSent, reset }),
+    [issues, ready, error, refresh, addIssue, vote, removeIssue, markSent, reset],
   );
 
   return (

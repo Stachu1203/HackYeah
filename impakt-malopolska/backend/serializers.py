@@ -4,7 +4,15 @@ import json
 import sqlite3
 
 
-def issue_to_json(row: sqlite3.Row, voted: bool = False) -> dict:
+def issue_to_json(
+    row: sqlite3.Row,
+    my_vote: int = 0,
+    image_ids: list[str] | None = None,
+    current_user: sqlite3.Row | None = None,
+) -> dict:
+    can_delete = current_user is not None and (
+        current_user["role"] == "admin" or current_user["id"] == row["author_id"]
+    )
     return {
         "id": row["id"],
         "title": row["title"],
@@ -14,13 +22,16 @@ def issue_to_json(row: sqlite3.Row, voted: bool = False) -> dict:
         "longitude": row["longitude"],
         "locationName": row["location_name"],
         "upvotes": row["upvotes"],
+        "downvotes": row["downvotes"],
+        "score": row["upvotes"] - row["downvotes"],
         "status": row["status"],
-        "imageUrl": row["image_url"],
+        "images": [f"/api/images/{image_id}" for image_id in image_ids or []],
         "authorName": row["author_name"],
         "createdAt": row["created_at"],
         "keywords": json.loads(row["keywords"]),
-        "voted": voted,
+        "myVote": my_vote,
         "commentsCount": row["comments_count"],
+        "canDelete": can_delete,
     }
 
 

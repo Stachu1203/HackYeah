@@ -1,10 +1,13 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { MapPin, ArrowUpRight, MessageCircle } from "lucide-react";
-import type { Issue } from "../lib/types";
+import type { Issue, Place, Vote } from "../lib/types";
 import { CATEGORY_LABELS, UPVOTE_THRESHOLD } from "../lib/types";
 import { CATEGORY_COLORS, CATEGORY_ICONS } from "../lib/category-ui";
 import { categoryPlaceholder } from "../lib/placeholders";
+import { distanceKm } from "../lib/geo";
+import { useKawaiiText } from "../lib/kawaii";
+import { ImageCarousel } from "./ImageCarousel";
 import { VoteButton } from "./VoteButton";
 
 export function timeAgo(iso: string) {
@@ -25,21 +28,26 @@ function daysLeft(iso: string) {
 const TILTS = ["-rotate-[0.8deg]", "rotate-[0.6deg]", "-rotate-[0.3deg]", "rotate-[1deg]"];
 
 type Props = {
+  /** już przefiltrowane i posortowane */
   issues: Issue[];
-  onToggleVote: (id: string) => Promise<unknown>;
+  onVote: (id: string, value: Vote) => Promise<unknown>;
+  /** punkt odniesienia do „x km stąd” (miejsce zamieszkania z konta) */
+  origin?: Place | null;
+  emptyHint?: string;
 };
 
-export function IssueFeed({ issues, onToggleVote }: Props) {
-  const sorted = [...issues].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
+export function IssueFeed({ issues, onVote, origin, emptyHint }: Props) {
+  const k = useKawaiiText();
+  const sorted = issues;
 
   if (sorted.length === 0) {
     return (
       <div className="paper-card mx-auto max-w-lg p-8 text-center">
-        <p className="font-display text-[24px] font-bold italic">Pusta tablica</p>
+        <p className="font-display text-[24px] font-bold italic">
+          {k("Pusta tablica", "Pusta tablica (｡•́︿•̀｡) さびしい…")}
+        </p>
         <p className="mt-2 text-[15px] text-[var(--muted)]">
-          Zgłoszenia wygasają po tygodniu. Przypnij pierwsze — przycisk na dole.
+          {emptyHint ?? "Zgłoszenia wygasają po tygodniu. Przypnij pierwsze — przycisk na dole."}
         </p>
       </div>
     );
@@ -50,10 +58,10 @@ export function IssueFeed({ issues, onToggleVote }: Props) {
       {sorted.map((issue, index) => {
         const Icon = CATEGORY_ICONS[issue.category];
         const colors = CATEGORY_COLORS[issue.category];
-        const src =
-          issue.imageUrl || categoryPlaceholder(issue.category, issue.title);
-        const ready = issue.upvotes >= UPVOTE_THRESHOLD && issue.status !== "SENT";
+        const fallback = categoryPlaceholder(issue.category, issue.title);
+        const ready = issue.score >= UPVOTE_THRESHOLD && issue.status !== "SENT";
         const left = daysLeft(issue.createdAt);
+        const km = origin ? distanceKm(origin, issue) : null;
 
         return (
           <motion.li
@@ -80,7 +88,8 @@ export function IssueFeed({ issues, onToggleVote }: Props) {
                   </p>
                   <p className="flex items-center gap-1 truncate text-[12px] font-medium text-[var(--muted)]">
                     <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-                    {issue.locationName} · {timeAgo(issue.createdAt)}
+                    {issue.locationName}
+                    {km !== null && ` · ${km < 1 ? "<1" : Math.round(km)} km`} · {timeAgo(issue.createdAt)}
                   </p>
                 </div>
                 <span
@@ -91,15 +100,8 @@ export function IssueFeed({ issues, onToggleVote }: Props) {
                 </span>
               </header>
 
-              <Link
-                to={`/zgloszenie/${issue.id}`}
-                className="relative mx-3.5 block overflow-hidden rounded-xl border-2 border-[var(--ink)] sm:mx-4"
-              >
-                <img
-                  src={src}
-                  alt=""
-                  className="aspect-[4/3] w-full bg-[var(--wash)] object-cover"
-                />
+              <div className="relative mx-3.5 overflow-hidden rounded-xl border-2 border-[var(--ink)] sm:mx-4">
+                <ImageCarousel images={issue.images} fallback={fallback} label={issue.title} />
                 {ready && (
                   <span className="stamp absolute right-3 top-3 text-[var(--riso-red)]">
                     Gotowe do wniosku
@@ -110,7 +112,12 @@ export function IssueFeed({ issues, onToggleVote }: Props) {
                     Wysłano do urzędu
                   </span>
                 )}
-              </Link>
+                {issue.images.length > 1 && (
+                  <span className="absolute left-3 top-3 rounded-full border-2 border-[var(--ink)] bg-[var(--surface)] px-2 text-[11px] font-bold">
+                    {issue.images.length} zdjęcia
+                  </span>
+                )}
+              </div>
 
               <div className="space-y-2 px-3.5 pb-4 pt-3 sm:px-4">
                 <Link to={`/zgloszenie/${issue.id}`} className="group block">
@@ -124,7 +131,7 @@ export function IssueFeed({ issues, onToggleVote }: Props) {
 
                 <div className="flex items-center justify-between gap-3 pt-2">
                   <div className="flex items-center gap-2">
-                    <VoteButton issue={issue} onToggle={onToggleVote} />
+                    <VoteButton issue={issue} onVote={onVote} />
                     <Link
                       to={`/zgloszenie/${issue.id}#komentarze`}
                       className="inline-flex items-center gap-1.5 rounded-full border-2 border-transparent px-2 py-1.5 text-[15px] font-bold text-[var(--ink)] transition hover:border-[var(--ink)]"
@@ -139,13 +146,13 @@ export function IssueFeed({ issues, onToggleVote }: Props) {
                       className="hidden text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)] sm:inline"
                       title="Zgłoszenia znikają z tablicy po 7 dniach"
                     >
-                      {left === 0 ? "wygasa dziś" : `jeszcze ${left} dni`}
+                      {left === 0 ? "wygasa dziś" : k(`jeszcze ${left} dni`, `jeszcze ${left} dni ⏳`)}
                     </span>
                     <Link
                       to={`/zgloszenie/${issue.id}`}
                       className="inline-flex items-center gap-0.5 text-[15px] font-bold text-[var(--accent)] underline decoration-2 underline-offset-4"
                     >
-                      Szczegóły
+                      {k("Szczegóły", "Miru 見る")}
                       <ArrowUpRight className="h-4 w-4" aria-hidden />
                     </Link>
                   </div>

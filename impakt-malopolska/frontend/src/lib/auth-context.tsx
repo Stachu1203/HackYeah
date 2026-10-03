@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { api, type RegisterInput } from "./api";
-import type { User } from "./types";
+import type { Place, User } from "./types";
 
 type AuthContextValue = {
   user: User | null;
@@ -18,6 +18,7 @@ type AuthContextValue = {
   login: (username: string, password: string) => Promise<User>;
   register: (input: RegisterInput) => Promise<User>;
   logout: () => Promise<void>;
+  updateLocation: (place: Place | null) => Promise<User>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -51,9 +52,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const updateLocation = useCallback(async (place: Place | null) => {
+    const { user } = await api.updateLocation(place);
+    setUser(user);
+    return user;
+  }, []);
+
   const value = useMemo(
-    () => ({ user, ready, isAdmin: user?.role === "admin", login, register, logout }),
-    [user, ready, login, register, logout],
+    () => ({
+      user,
+      ready,
+      isAdmin: user?.role === "admin",
+      login,
+      register,
+      logout,
+      updateLocation,
+    }),
+    [user, ready, login, register, logout, updateLocation],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

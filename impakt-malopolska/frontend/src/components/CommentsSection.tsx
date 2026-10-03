@@ -8,6 +8,8 @@ import { useIssues } from "../lib/issues-context";
 import { useTheme } from "../lib/theme";
 import type { Comment } from "../lib/types";
 import { timeAgo } from "./IssueFeed";
+import { ReportButton } from "./ReportButton";
+import { useKawaiiText } from "../lib/kawaii";
 
 const MAX_CHARS = 1000;
 const MEOW_SUFFIX = /(?:^|\s+)meow\s+meow[\s.!?♡]*$/i;
@@ -23,6 +25,7 @@ export function CommentsSection({ issueId }: { issueId: string }) {
   const { user } = useAuth();
   const { refresh } = useIssues();
   const { kawaii } = useTheme();
+  const k = useKawaiiText();
   const { pathname, hash } = useLocation();
   const [comments, setComments] = useState<Comment[] | null>(null);
   const [body, setBody] = useState("");
@@ -106,7 +109,7 @@ export function CommentsSection({ issueId }: { issueId: string }) {
         </p>
       ) : comments.length === 0 ? (
         <p className="paper-card mt-4 p-4 text-[15px] text-[var(--muted)]">
-          Nikt jeszcze nie skomentował. Bądź pierwszy!
+          {k("Nikt jeszcze nie skomentował. Bądź pierwszy!", "Nikt jeszcze nie skomentował… Bądź pierwszy! がんばって ♡")}
         </p>
       ) : (
         <ul className="mt-5 space-y-4">
@@ -133,6 +136,13 @@ export function CommentsSection({ issueId }: { issueId: string }) {
                     )}
                     <span className="text-[12px] text-[var(--muted)]">{timeAgo(c.createdAt)}</span>
                   </p>
+                  {!c.canDelete && (
+                    <ReportButton
+                      compact
+                      target={{ commentId: c.id }}
+                      label={`komentarz: ${c.body.slice(0, 40)}`}
+                    />
+                  )}
                   {c.canDelete && (
                     <button
                       type="button"
@@ -189,7 +199,7 @@ export function CommentsSection({ issueId }: { issueId: string }) {
               disabled={busy || !body.trim()}
               className="ink-btn rounded-full bg-[var(--riso-mint)] px-5 py-2 text-[15px] font-extrabold text-[var(--surface)] disabled:opacity-50"
             >
-              {busy ? "Dodaję…" : "Skomentuj"}
+              {busy ? "Dodaję…" : k("Skomentuj", "Skomentuj ♡")}
             </button>
           </div>
         </form>

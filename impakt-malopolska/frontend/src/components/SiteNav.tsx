@@ -78,7 +78,9 @@ export function SiteNav() {
 
           {user ? (
             <div className="flex min-w-0 items-center gap-1">
-              <span
+              <Link
+                to="/logowanie"
+                aria-label={`Moje konto: ${user.displayName}`}
                 className={`inline-flex h-9 min-w-0 items-center gap-1 rounded-full border-2 border-[var(--ink)] px-2.5 text-[12px] font-bold ${
                   isAdmin
                     ? "bg-[var(--riso-blue)] text-[var(--surface)]"
@@ -90,7 +92,7 @@ export function SiteNav() {
                 <span className="max-w-[4.5rem] truncate min-[400px]:max-w-[7rem] sm:max-w-[9rem]">
                   {user.displayName}
                 </span>
-              </span>
+              </Link>
               <button
                 type="button"
                 onClick={async () => {

@@ -38,9 +38,11 @@ Baza `backend/impakt.db` tworzy się sama przy pierwszym starcie. Ręczny reset:
 | Metoda | Ścieżka | Opis |
 |---|---|---|
 | GET | `/api/issues` | Lista zgłoszeń (najnowsze pierwsze) |
-| POST | `/api/issues` | Nowe zgłoszenie (wymaga konta) |
+| POST | `/api/issues` | Nowe zgłoszenie z maks. 4 zdjęciami; przed zapisem moderacja JEV (wymaga konta) |
+| DELETE | `/api/issues/<id>` | Usunięcie (autor albo urząd) |
+| GET | `/api/images/<id>` | Zdjęcie zgłoszenia |
 | GET | `/api/issues/<id>` | Jedno zgłoszenie |
-| POST / DELETE | `/api/issues/<id>/upvote` | Poparcie / cofnięcie (jeden głos na konto); od 20 głosów `READY_TO_SEND` |
+| PUT | `/api/issues/<id>/vote` | Głos `1` / `-1` / `0` (jeden na konto); wynik = za − przeciw, od 20 `READY_TO_SEND` |
 | POST | `/api/issues/<id>/sent` | Oznacz jako wysłane (wymaga konta) |
 | GET | `/api/issues/<id>/matches` | Top 3 podobnych innowacji |
 | POST | `/api/issues/<id>/petition` | Wniosek z art. 241 KPA |
@@ -48,6 +50,11 @@ Baza `backend/impakt.db` tworzy się sama przy pierwszym starcie. Ręczny reset:
 | POST | `/api/auth/register` | Rejestracja i zalogowanie |
 | POST | `/api/auth/login` · `/api/auth/logout` | Logowanie / wylogowanie |
 | GET | `/api/auth/me` | Zalogowany użytkownik albo `null` |
+| PUT | `/api/auth/me/location` | Okolica konta (domyślny filtr tablicy) |
+| POST | `/api/reports` | Zgłoszenie nadużycia (post albo komentarz) |
+| GET | `/api/admin/reports` · `/api/admin/bans` | Kolejka zgłoszeń i zablokowane konta (urząd) |
+| POST | `/api/admin/reports/<id>/resolve` · `/dismiss` | Usuń treść / zablokuj autora / odrzuć |
+| POST | `/api/admin/users/<id>/unban` | Odblokowanie konta |
 
 ## Jak to działa
 
@@ -61,6 +68,14 @@ Baza `backend/impakt.db` tworzy się sama przy pierwszym starcie. Ręczny reset:
 - **Konta.** Hasła hashowane (werkzeug/scrypt), sesja w podpisanym ciasteczku (httpOnly, 30 dni).
   Klucz sesji: `IMPAKT_SECRET_KEY` albo plik `backend/.secret_key` tworzony przy pierwszym starcie.
   Przeglądać może każdy; dodawanie i popieranie zgłoszeń wymaga konta.
+- **Moderacja JEV.** Przy „Przypnij do tablicy” tytuł, opis i zdjęcia trafiają do modelu przez OpenRouter
+  (`JEV_TOKEN`, opcjonalnie `JEV_MODEL` w `backend/.env`). Obraźliwe treści, dane osobowe i spam są odrzucane (HTTP 422).
+  Gdy OpenRouter nie odpowiada, post przechodzi (zapis w logu) — żeby demo nie stanęło bez sieci.
+  Nieczytelne zdjęcie blokuje publikację, więc uszkodzonym plikiem nie da się ominąć moderacji.
+- **Lokalizacja.** Konto może mieć okolicę (przy rejestracji albo w „Moje konto”); tablica domyślnie
+  pokazuje zgłoszenia do 25 km od niej. Filtry: promień, miejscowość; sortowanie: najnowsze, najlepsze, najbliżej.
+- **Zgłoszenia nadużyć i bany.** Zalogowani zgłaszają posty i komentarze; urząd w panelu usuwa treść,
+  blokuje autora albo odrzuca zgłoszenie. Zablokowane konto nie zaloguje się ani nie doda treści.
 - **Konto urzędu** zakłada się samo: login `meow`, hasło `meow_meow`
   (nadpisz zmiennymi `IMPAKT_ADMIN_USERNAME` / `IMPAKT_ADMIN_PASSWORD` przed pierwszym startem).
 
