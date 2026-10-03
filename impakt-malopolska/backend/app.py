@@ -1,14 +1,16 @@
 """ImpaktMałopolska — REST API (Flask + SQLite)."""
 
 import json
-import re
 import time
 import uuid
+from datetime import timedelta
 
 from flask import Flask, abort, g, jsonify, request
 
+import auth
 import db
 import embeddings
+from auth import admin_required, login_required
 from matching import find_best_matches
 from petition import draft_petition
 from serializers import innovation_to_json, issue_to_json
@@ -20,14 +22,17 @@ CATEGORIES = {
 }
 MAX_IMAGE_CHARS = 2_100_000  # ~1.5 MB pliku po zakodowaniu base64
 PURGE_INTERVAL_S = 60
-VOTER_COOKIE = "impakt_voter"
-VOTER_ID_RE = re.compile(r"^[0-9a-f]{32}$")
 
 app = Flask(__name__)
+app.config["SECRET_KEY"] = auth.load_secret_key()
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
 app.config["MAX_CONTENT_LENGTH"] = 3 * 1024 * 1024
 app.config["JSON_AS_ASCII"] = False
 app.json.ensure_ascii = False
 app.teardown_appcontext(db.close_db)
+app.register_blueprint(auth.bp)
 
 _last_purge = 0.0
 
@@ -41,26 +46,14 @@ def purge_week_old_issues():
         db.purge_old_issues(db.get_db())
 
 
-@app.before_request
-def identify_voter():
-    """Każda przeglądarka dostaje anonimowy identyfikator — jeden głos na zgłoszenie."""
-    voter_id = request.cookies.get(VOTER_COOKIE, "")
-    g.new_voter = not VOTER_ID_RE.match(voter_id)
-    g.voter_id = uuid.uuid4().hex if g.new_voter else voter_id
-
-
-@app.after_request
-def set_voter_cookie(response):
-    if g.get("new_voter"):
-        response.set_cookie(
-            VOTER_COOKIE, g.voter_id,
-            max_age=365 * 24 * 3600, httponly=True, samesite="Lax",
-        )
-    return response
+app.before_request(auth.load_current_user)
 
 
 @app.errorhandler(400)
+@app.errorhandler(401)
+@app.errorhandler(403)
 @app.errorhandler(404)
+@app.errorhandler(409)
 @app.errorhandler(413)
 def json_error(err):
     return jsonify({"error": err.description}), err.code
@@ -74,9 +67,10 @@ def _get_issue_row(issue_id: str):
 
 
 def _has_voted(issue_id: str) -> bool:
+    if g.user is None:
+        return False
     row = db.get_db().execute(
-        "SELECT 1 FROM votes WHERE issue_id = :id AND voter_id = :voter_id",
-        {"id": issue_id, "voter_id": g.voter_id},
+        db.Q["has_vote"], {"id": issue_id, "user_id": g.user["id"]}
     ).fetchone()
     return row is not None
 
@@ -99,10 +93,12 @@ def health():
 def list_issues():
     conn = db.get_db()
     rows = conn.execute(db.Q["list_issues"]).fetchall()
-    voted = {
-        r["issue_id"]
-        for r in conn.execute(db.Q["voted_issue_ids"], {"voter_id": g.voter_id})
-    }
+    voted = set()
+    if g.user is not None:
+        voted = {
+            r["issue_id"]
+            for r in conn.execute(db.Q["voted_issue_ids"], {"user_id": g.user["id"]})
+        }
     return jsonify([issue_to_json(r, r["id"] in voted) for r in rows])
 
 
@@ -112,13 +108,13 @@ def get_issue(issue_id):
 
 
 @app.post("/api/issues")
+@login_required
 def create_issue():
     data = request.get_json(silent=True) or {}
     title = str(data.get("title", "")).strip()[:140]
     description = str(data.get("description", "")).strip()[:2000]
     category = data.get("category")
     location_name = str(data.get("locationName", "")).strip()[:120] or "Małopolska"
-    author_name = str(data.get("authorName") or "").strip()[:60] or "Anonim"
     image_url = data.get("imageUrl")
 
     if not title or not description:
@@ -152,23 +148,25 @@ def create_issue():
             "longitude": longitude,
             "location_name": location_name,
             "image_url": image_url,
-            "author_name": author_name,
+            "author_name": g.user["display_name"],
+            "author_id": g.user["id"],
             "keywords": keywords,
             "embedding": embeddings.embed_record(title, description, keywords),
         },
     )
     # Autor zgłoszenia oddaje pierwszy głos (upvotes = 1 przy wstawieniu).
-    conn.execute(db.Q["add_vote"], {"id": issue_id, "voter_id": g.voter_id})
+    conn.execute(db.Q["add_vote"], {"id": issue_id, "user_id": g.user["id"]})
     conn.commit()
     return _issue_response(issue_id), 201
 
 
 @app.post("/api/issues/<issue_id>/upvote")
+@login_required
 def upvote_issue(issue_id):
     _get_issue_row(issue_id)
     conn = db.get_db()
-    params = {"id": issue_id, "voter_id": g.voter_id, "threshold": UPVOTE_THRESHOLD}
-    # INSERT OR IGNORE jest atomowy: licznik rośnie tylko przy pierwszym głosie tej osoby.
+    params = {"id": issue_id, "user_id": g.user["id"], "threshold": UPVOTE_THRESHOLD}
+    # INSERT OR IGNORE jest atomowy: licznik rośnie tylko przy pierwszym głosie tego konta.
     if conn.execute(db.Q["add_vote"], params).rowcount == 1:
         conn.execute(db.Q["upvote_issue"], params)
     conn.commit()
@@ -176,10 +174,11 @@ def upvote_issue(issue_id):
 
 
 @app.delete("/api/issues/<issue_id>/upvote")
+@login_required
 def remove_upvote(issue_id):
     _get_issue_row(issue_id)
     conn = db.get_db()
-    params = {"id": issue_id, "voter_id": g.voter_id, "threshold": UPVOTE_THRESHOLD}
+    params = {"id": issue_id, "user_id": g.user["id"], "threshold": UPVOTE_THRESHOLD}
     if conn.execute(db.Q["remove_vote"], params).rowcount == 1:
         conn.execute(db.Q["downvote_issue"], params)
     conn.commit()
@@ -187,6 +186,7 @@ def remove_upvote(issue_id):
 
 
 @app.post("/api/issues/<issue_id>/sent")
+@login_required
 def mark_sent(issue_id):
     conn = db.get_db()
     cur = conn.execute(db.Q["mark_sent"], {"id": issue_id})
@@ -226,6 +226,7 @@ def issue_petition(issue_id):
 
 
 @app.post("/api/reset")
+@admin_required
 def reset():
     db.reset_database(db.get_db())
     return {"ok": True}

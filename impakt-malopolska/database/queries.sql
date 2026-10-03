@@ -17,19 +17,22 @@ WHERE id = :id;
 -- name: insert_issue
 INSERT INTO issues (id, title, description, category, latitude, longitude,
                     location_name, upvotes, status, image_url, author_name,
-                    created_at, keywords, embedding)
+                    author_id, created_at, keywords, embedding)
 VALUES (:id, :title, :description, :category, :latitude, :longitude,
-        :location_name, 1, 'DRAFT', :image_url, :author_name,
+        :location_name, 1, 'DRAFT', :image_url, :author_name, :author_id,
         strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), :keywords, :embedding);
 
 -- name: add_vote
-INSERT OR IGNORE INTO votes (issue_id, voter_id) VALUES (:id, :voter_id);
+INSERT OR IGNORE INTO votes (issue_id, user_id) VALUES (:id, :user_id);
 
 -- name: remove_vote
-DELETE FROM votes WHERE issue_id = :id AND voter_id = :voter_id;
+DELETE FROM votes WHERE issue_id = :id AND user_id = :user_id;
+
+-- name: has_vote
+SELECT 1 FROM votes WHERE issue_id = :id AND user_id = :user_id;
 
 -- name: voted_issue_ids
-SELECT issue_id FROM votes WHERE voter_id = :voter_id;
+SELECT issue_id FROM votes WHERE user_id = :user_id;
 
 -- name: upvote_issue
 UPDATE issues
@@ -78,3 +81,17 @@ UPDATE issues SET embedding = :embedding WHERE id = :id;
 
 -- name: set_innovation_embedding
 UPDATE innovations SET embedding = :embedding WHERE id = :id;
+
+-- name: insert_user
+INSERT INTO users (id, username, display_name, password_hash, role)
+VALUES (:id, :username, :display_name, :password_hash, :role);
+
+-- name: insert_user_if_missing
+INSERT OR IGNORE INTO users (id, username, display_name, password_hash, role)
+VALUES (:id, :username, :display_name, :password_hash, :role);
+
+-- name: get_user_by_username
+SELECT id, username, display_name, password_hash, role FROM users WHERE username = :username;
+
+-- name: get_user_by_id
+SELECT id, username, display_name, role FROM users WHERE id = :id;

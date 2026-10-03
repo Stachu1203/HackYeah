@@ -28,6 +28,13 @@ export interface Issue {
   voted: boolean;
 }
 
+export interface User {
+  id: string;
+  username: string;
+  displayName: string;
+  role: "user" | "admin";
+}
+
 export interface Innovation {
   id: string;
   title: string;

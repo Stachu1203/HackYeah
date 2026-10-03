@@ -6,6 +6,16 @@ PRAGMA foreign_keys = ON;
 DROP TABLE IF EXISTS votes;
 DROP TABLE IF EXISTS issues;
 DROP TABLE IF EXISTS innovations;
+-- Konta przeżywają reset danych demo — tabeli users nie usuwamy.
+
+CREATE TABLE IF NOT EXISTS users (
+    id            TEXT PRIMARY KEY,
+    username      TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    display_name  TEXT NOT NULL,
+    password_hash TEXT NOT NULL,                      -- werkzeug (scrypt)
+    role          TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+    created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
 
 CREATE TABLE innovations (
     id                  TEXT PRIMARY KEY,
@@ -35,6 +45,7 @@ CREATE TABLE issues (
                       CHECK (status IN ('DRAFT', 'READY_TO_SEND', 'SENT')),
     image_url     TEXT,                               -- data URL zdjęcia
     author_name   TEXT NOT NULL,
+    author_id     TEXT REFERENCES users (id) ON DELETE SET NULL,  -- NULL dla danych startowych
     created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
     keywords      TEXT NOT NULL DEFAULT '[]',         -- tablica JSON
     embedding     BLOB
@@ -43,12 +54,12 @@ CREATE TABLE issues (
 CREATE INDEX idx_issues_created_at ON issues (created_at);
 CREATE INDEX idx_issues_category   ON issues (category);
 
--- Jeden głos na osobę: voter_id pochodzi z ciasteczka przeglądarki.
+-- Jeden głos na konto.
 CREATE TABLE votes (
     issue_id   TEXT NOT NULL REFERENCES issues (id) ON DELETE CASCADE,
-    voter_id   TEXT NOT NULL,
+    user_id    TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
-    PRIMARY KEY (issue_id, voter_id)
+    PRIMARY KEY (issue_id, user_id)
 );
 
-CREATE INDEX idx_votes_voter ON votes (voter_id);
+CREATE INDEX idx_votes_user ON votes (user_id);

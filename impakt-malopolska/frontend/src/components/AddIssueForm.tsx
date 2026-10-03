@@ -7,6 +7,8 @@ import {
   Plus,
   X,
 } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../lib/auth-context";
 import { useIssues } from "../lib/issues-context";
 import type { IssueCategory } from "../lib/types";
 import { CATEGORY_LABELS } from "../lib/types";
@@ -32,6 +34,17 @@ export function AddIssueForm({
   fab?: boolean;
 }) {
   const { addIssue } = useIssues();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  function openForm() {
+    if (!user) {
+      navigate("/logowanie", { state: { from: pathname } });
+      return;
+    }
+    setOpen(true);
+  }
   const fileRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -43,7 +56,6 @@ export function AddIssueForm({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [geoBusy, setGeoBusy] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
-  const [authorName, setAuthorName] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   function resetForm() {
@@ -108,7 +120,6 @@ export function AddIssueForm({
         longitude: lng,
         locationName: locationName.trim() || "Małopolska",
         imageUrl,
-        authorName: authorName.trim() || undefined,
       });
       resetForm();
       setOpen(false);
@@ -125,7 +136,7 @@ export function AddIssueForm({
       {fab ? (
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={openForm}
           className="ink-btn group fixed bottom-6 right-5 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--riso-red)] text-[var(--surface)]"
           aria-label="Dodaj zgłoszenie" title="Zgłoś problem"
         >
@@ -134,7 +145,7 @@ export function AddIssueForm({
       ) : (
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={openForm}
           className="ink-btn inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--riso-red)] px-4 py-3.5 text-[15px] font-bold text-[var(--surface)]"
         >
           <Plus className="h-4 w-4" aria-hidden />
@@ -244,17 +255,6 @@ export function AddIssueForm({
                     onChange={(e) => setDescription(e.target.value)}
                     className="mt-1.5 w-full resize-none rounded-xl border-2 border-[var(--ink)] bg-[var(--surface)] px-3.5 py-3 text-[17px] text-[var(--ink)] outline-none transition focus:shadow-[3px_3px_0_var(--riso-blue)]"
                     placeholder="Komu przeszkadza i od kiedy?"
-                  />
-                </label>
-
-                <label className="block text-[12px] font-extrabold uppercase tracking-[0.14em] text-[var(--ink)]">
-                  Podpis (opcjonalnie)
-                  <input
-                    value={authorName}
-                    onChange={(e) => setAuthorName(e.target.value)}
-                    maxLength={60}
-                    className="mt-1.5 w-full rounded-xl border-2 border-[var(--ink)] bg-[var(--surface)] px-3.5 py-3 text-[17px] text-[var(--ink)] outline-none transition focus:shadow-[3px_3px_0_var(--riso-blue)]"
-                    placeholder="np. Anna K."
                   />
                 </label>
 

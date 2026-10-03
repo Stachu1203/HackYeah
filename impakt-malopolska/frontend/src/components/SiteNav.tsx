@@ -1,11 +1,11 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Flame, House, Shield } from "lucide-react";
-import { useRole } from "../lib/role-context";
+import { Flame, House, LogIn, LogOut, Shield } from "lucide-react";
+import { useAuth } from "../lib/auth-context";
 
 export function SiteNav() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { role, setRole, isAdmin } = useRole();
+  const { user, isAdmin, logout } = useAuth();
 
   const homeActive =
     pathname === "/" || pathname.startsWith("/zgloszenie");
@@ -43,42 +43,50 @@ export function SiteNav() {
             <House className="h-4 w-4" aria-hidden />
             <span className="hidden sm:inline">Tablica</span>
           </Link>
-          <Link to="/admin" aria-label="Panel urzędu" className={linkClass(adminActive)}>
-            <Flame className="h-4 w-4" aria-hidden />
-            <span className="hidden sm:inline">Panel</span>
-          </Link>
+          {isAdmin && (
+            <Link to="/admin" aria-label="Panel urzędu" className={linkClass(adminActive)}>
+              <Flame className="h-4 w-4" aria-hidden />
+              <span className="hidden sm:inline">Panel</span>
+            </Link>
+          )}
         </nav>
 
-        <div className="flex items-center rounded-full border-2 border-[var(--ink)] bg-[var(--surface)] p-0.5">
-          <button
-            type="button"
-            onClick={() => setRole("user")}
-            className={`rounded-full px-2.5 py-1 text-[12px] font-bold transition ${
-              role === "user"
-                ? "bg-[var(--riso-yellow)] text-[var(--ink)]"
-                : "text-[var(--muted)]"
-            }`}
-            aria-pressed={role === "user"}
+        {user ? (
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span
+              className={`inline-flex min-w-0 items-center gap-1 rounded-full border-2 border-[var(--ink)] px-2.5 py-1 text-[12px] font-bold ${
+                isAdmin
+                  ? "bg-[var(--riso-blue)] text-[var(--surface)]"
+                  : "bg-[var(--riso-yellow)] text-[var(--ink)]"
+              }`}
+              title={`Zalogowano jako ${user.username}`}
+            >
+              {isAdmin && <Shield className="h-3 w-3 shrink-0" aria-hidden />}
+              <span className="max-w-[9rem] truncate">{user.displayName}</span>
+            </span>
+            <button
+              type="button"
+              onClick={async () => {
+                await logout();
+                if (pathname.startsWith("/admin")) navigate("/");
+              }}
+              className="ink-btn rounded-full bg-[var(--surface)] p-1.5"
+              aria-label="Wyloguj"
+              title="Wyloguj"
+            >
+              <LogOut className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+        ) : (
+          <Link
+            to="/logowanie"
+            state={{ from: pathname }}
+            className="ink-btn inline-flex items-center gap-1.5 rounded-full bg-[var(--riso-yellow)] px-3 py-1.5 text-[13px] font-bold"
           >
-            Mieszkaniec
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setRole("admin");
-              if (!pathname.startsWith("/admin")) navigate("/admin");
-            }}
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-bold transition ${
-              isAdmin
-                ? "bg-[var(--riso-blue)] text-[var(--surface)]"
-                : "text-[var(--muted)]"
-            }`}
-            aria-pressed={isAdmin}
-          >
-            <Shield className="h-3 w-3" aria-hidden />
-            Urząd
-          </button>
-        </div>
+            <LogIn className="h-4 w-4" aria-hidden />
+            Zaloguj
+          </Link>
+        )}
       </div>
     </header>
   );

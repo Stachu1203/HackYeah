@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Heart } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../lib/auth-context";
 import type { Issue } from "../lib/types";
 
 type Props = {
@@ -9,12 +11,20 @@ type Props = {
   size?: "md" | "lg";
 };
 
-/** Poparcie zgłoszenia — jeden głos na osobę, drugie kliknięcie cofa głos. */
+/** Poparcie zgłoszenia — jeden głos na konto, drugie kliknięcie cofa głos. Bez konta prowadzi do logowania. */
 export function VoteButton({ issue, onToggle, size = "md" }: Props) {
   const [pending, setPending] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   async function handleClick() {
     if (pending) return;
+    if (!user) {
+      // Głosować można tylko z konta — jeden głos na osobę.
+      navigate("/logowanie", { state: { from: pathname } });
+      return;
+    }
     setPending(true);
     try {
       await onToggle(issue.id);

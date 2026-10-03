@@ -2,11 +2,12 @@ import { MotionConfig } from "framer-motion";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { SiteNav } from "./components/SiteNav";
 import { IssuesProvider } from "./lib/issues-context";
-import { RoleProvider } from "./lib/role-context";
+import { AuthProvider } from "./lib/auth-context";
 import { HomePage } from "./pages/HomePage";
 import { IssueDetailPage } from "./pages/IssueDetailPage";
 import { AdminPage } from "./pages/AdminPage";
 import { SlidesPage } from "./pages/SlidesPage";
+import { LoginPage } from "./pages/LoginPage";
 
 export default function App() {
   const { pathname } = useLocation();
@@ -16,7 +17,7 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <RoleProvider>
+      <AuthProvider>
         <IssuesProvider>
           <SiteNav />
           <main className="flex flex-1 flex-col">
@@ -24,10 +25,11 @@ export default function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/zgloszenie/:id" element={<IssueDetailPage />} />
               <Route path="/admin" element={<AdminPage />} />
+              <Route path="/logowanie" element={<LoginPage />} />
             </Routes>
           </main>
         </IssuesProvider>
-      </RoleProvider>
+      </AuthProvider>
     </MotionConfig>
   );
 }

@@ -1,10 +1,12 @@
 """Dostęp do SQLite: połączenie, zapytania z database/queries.sql, inicjalizacja i sprzątanie."""
 
+import os
 import re
 import sqlite3
 from pathlib import Path
 
 from flask import g
+from werkzeug.security import generate_password_hash
 
 import embeddings
 
@@ -14,6 +16,11 @@ DB_PATH = Path(__file__).resolve().parent / "impakt.db"
 
 # Zgłoszenia starsze niż tydzień są usuwane.
 MAX_ISSUE_AGE = "-7 days"
+
+# Konto urzędu tworzone przy starcie — dane logowania można nadpisać zmiennymi środowiskowymi.
+ADMIN_ID = "usr-admin"
+ADMIN_USERNAME = os.environ.get("IMPAKT_ADMIN_USERNAME", "meow")
+ADMIN_PASSWORD = os.environ.get("IMPAKT_ADMIN_PASSWORD", "meow_meow")
 
 
 def _load_queries() -> dict[str, str]:
@@ -52,7 +59,22 @@ def reset_database(conn: sqlite3.Connection) -> None:
     conn.executescript((SQL_DIR / "schema.sql").read_text(encoding="utf-8"))
     conn.executescript((SQL_DIR / "seed.sql").read_text(encoding="utf-8"))
     fill_missing_embeddings(conn)
+    ensure_admin(conn)
     conn.commit()
+
+
+def ensure_admin(conn: sqlite3.Connection) -> None:
+    """Zakłada konto urzędu, jeśli jeszcze nie istnieje (istniejącego nie nadpisuje)."""
+    conn.execute(
+        Q["insert_user_if_missing"],
+        {
+            "id": ADMIN_ID,
+            "username": ADMIN_USERNAME,
+            "display_name": "Urząd Małopolska",
+            "password_hash": generate_password_hash(ADMIN_PASSWORD),
+            "role": "admin",
+        },
+    )
 
 
 def fill_missing_embeddings(conn: sqlite3.Connection) -> None:
@@ -76,14 +98,15 @@ def purge_old_issues(conn: sqlite3.Connection) -> int:
 def init_if_needed() -> None:
     conn = connect()
     try:
-        # Tabela votes doszła później — jej brak oznacza starą bazę do odtworzenia.
+        # Tabela users doszła najpóźniej — jej brak oznacza starą bazę do odtworzenia.
         has_schema = conn.execute(
-            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'votes'"
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'users'"
         ).fetchone()
         if not has_schema:
             reset_database(conn)
         else:
             fill_missing_embeddings(conn)
+            ensure_admin(conn)
             conn.commit()
         purge_old_issues(conn)
     finally:

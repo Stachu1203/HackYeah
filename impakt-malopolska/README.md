@@ -37,13 +37,16 @@ Baza `backend/impakt.db` tworzy się sama przy pierwszym starcie. Ręczny reset:
 | Metoda | Ścieżka | Opis |
 |---|---|---|
 | GET | `/api/issues` | Lista zgłoszeń (najnowsze pierwsze) |
-| POST | `/api/issues` | Nowe zgłoszenie |
+| POST | `/api/issues` | Nowe zgłoszenie (wymaga konta) |
 | GET | `/api/issues/<id>` | Jedno zgłoszenie |
-| POST | `/api/issues/<id>/upvote` | Poparcie; od 20 głosów status `READY_TO_SEND` |
-| POST | `/api/issues/<id>/sent` | Oznacz jako wysłane |
+| POST / DELETE | `/api/issues/<id>/upvote` | Poparcie / cofnięcie (jeden głos na konto); od 20 głosów `READY_TO_SEND` |
+| POST | `/api/issues/<id>/sent` | Oznacz jako wysłane (wymaga konta) |
 | GET | `/api/issues/<id>/matches` | Top 3 podobnych innowacji |
 | POST | `/api/issues/<id>/petition` | Wniosek z art. 241 KPA |
-| POST | `/api/reset` | Odtworzenie bazy z seeda |
+| POST | `/api/reset` | Odtworzenie danych demo z seeda (tylko admin; konta zostają) |
+| POST | `/api/auth/register` | Rejestracja i zalogowanie |
+| POST | `/api/auth/login` · `/api/auth/logout` | Logowanie / wylogowanie |
+| GET | `/api/auth/me` | Zalogowany użytkownik albo `null` |
 
 ## Jak to działa
 
@@ -54,7 +57,11 @@ Baza `backend/impakt.db` tworzy się sama przy pierwszym starcie. Ręczny reset:
 - **Zgłoszenia wygasają po 7 dniach.** Backend usuwa starsze zgłoszenia przy starcie i najwyżej raz
   na minutę przy kolejnych żądaniach (`purge_old_issues` w `database/queries.sql`).
   Seed ma daty względne, więc po resecie dane demo są zawsze świeże.
-- **Role** Mieszkaniec / Urząd — przełącznik demo w przeglądarce (bez logowania).
+- **Konta.** Hasła hashowane (werkzeug/scrypt), sesja w podpisanym ciasteczku (httpOnly, 30 dni).
+  Klucz sesji: `IMPAKT_SECRET_KEY` albo plik `backend/.secret_key` tworzony przy pierwszym starcie.
+  Przeglądać może każdy; dodawanie i popieranie zgłoszeń wymaga konta.
+- **Konto urzędu** zakłada się samo: login `meow`, hasło `meow_meow`
+  (nadpisz zmiennymi `IMPAKT_ADMIN_USERNAME` / `IMPAKT_ADMIN_PASSWORD` przed pierwszym startem).
 
 ## Widoki
 
@@ -63,7 +70,8 @@ Baza `backend/impakt.db` tworzy się sama przy pierwszym starcie. Ręczny reset:
 | `/` | Tablica (feed) + mapa · FAB dodawania |
 | Dodaj | Zdjęcie (kamera/galeria) · GPS lub pin na mapie |
 | `/zgloszenie/:id` | Dopasowanie innowacji + wniosek art. 241 KPA |
-| `/admin` | Heatmapa + kolejka (rola **Urząd** w nav) |
+| `/admin` | Heatmapa + kolejka (tylko konto urzędu) |
+| `/logowanie` | Logowanie i rejestracja |
 | `/slajdy` | Slajdy do PDF (Ctrl+P) — nie w nawigacji; tylko do submission |
 
 ## Zespół

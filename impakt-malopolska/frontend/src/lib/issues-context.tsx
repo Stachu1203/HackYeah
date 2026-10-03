@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { api, type AddIssueInput } from "./api";
+import { useAuth } from "./auth-context";
 import type { Issue } from "./types";
 
 type IssuesContextValue = {
@@ -40,9 +41,12 @@ export function IssuesProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Po zalogowaniu/wylogowaniu zmieniają się flagi „voted”, więc lista jest pobierana od nowa.
+  const { user, ready: authReady } = useAuth();
+  const userId = user?.id ?? null;
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    if (authReady) void refresh();
+  }, [refresh, authReady, userId]);
 
   const replace = useCallback((updated: Issue) => {
     setIssues((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));

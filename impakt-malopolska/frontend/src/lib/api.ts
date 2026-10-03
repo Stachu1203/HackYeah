@@ -1,4 +1,4 @@
-import type { Innovation, Issue, IssueCategory, PetitionDraft } from "./types";
+import type { Innovation, Issue, IssueCategory, PetitionDraft, User } from "./types";
 
 export type AddIssueInput = {
   title: string;
@@ -8,8 +8,23 @@ export type AddIssueInput = {
   longitude: number;
   locationName: string;
   imageUrl: string | null;
-  authorName?: string;
 };
+
+export type RegisterInput = {
+  username: string;
+  password: string;
+  displayName?: string;
+};
+
+/** Błąd API z kodem HTTP — 401 oznacza brak zalogowania. */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}
 
 export type Match = { score: number; innovation: Innovation };
 
@@ -20,7 +35,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new Error(data?.error ?? `Błąd serwera (${res.status})`);
+    throw new ApiError(data?.error ?? `Błąd serwera (${res.status})`, res.status);
   }
   return data as T;
 }
@@ -44,4 +59,9 @@ export const api = {
       { innovationId },
     ),
   reset: () => post<{ ok: boolean }>("/reset"),
+  me: () => request<{ user: User | null }>("/auth/me"),
+  login: (username: string, password: string) =>
+    post<{ user: User }>("/auth/login", { username, password }),
+  register: (input: RegisterInput) => post<{ user: User }>("/auth/register", input),
+  logout: () => post<{ ok: boolean }>("/auth/logout"),
 };

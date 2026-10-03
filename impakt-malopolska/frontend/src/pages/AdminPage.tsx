@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   CheckCircle2,
@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { IssuesMap } from "../components/IssuesMap";
 import { useIssues } from "../lib/issues-context";
-import { useRole } from "../lib/role-context";
+import { useAuth } from "../lib/auth-context";
 import { CATEGORY_LABELS, UPVOTE_THRESHOLD } from "../lib/types";
 import { categoryPlaceholder } from "../lib/placeholders";
 
@@ -18,8 +18,7 @@ const BAR_COLORS = ["var(--riso-red)", "var(--riso-yellow)", "var(--riso-blue)",
 
 export function AdminPage() {
   const { issues, reset, markSent } = useIssues();
-  const { isAdmin, setRole } = useRole();
-  const navigate = useNavigate();
+  const { user, ready: authReady, isAdmin } = useAuth();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"ALL" | "READY" | "SENT" | "DRAFT">(
     "ALL",
@@ -55,6 +54,14 @@ export function AdminPage() {
     return [...map.entries()].sort((a, b) => b[1] - a[1]);
   }, [issues]);
 
+  if (!authReady) {
+    return (
+      <p role="status" className="py-16 text-center font-display text-[18px] italic text-[var(--muted)]">
+        Sprawdzamy przepustkę…
+      </p>
+    );
+  }
+
   if (!isAdmin) {
     return (
       <div className="mx-auto flex max-w-lg flex-1 flex-col items-center justify-center px-6 py-20 text-center">
@@ -63,17 +70,20 @@ export function AdminPage() {
         </span>
         <h1 className="font-display text-[34px] font-black italic tracking-tight">Panel urzędu</h1>
         <p className="mt-2 text-[15px] text-[var(--muted)]">
-          Demo: przełącz się na rolę „Urząd”, żeby zobaczyć heatmapę i kolejkę
-          wniosków.
+          {user
+            ? `Konto „${user.username}” nie ma uprawnień urzędu.`
+            : "Heatmapa i kolejka wniosków są dostępne po zalogowaniu na konto urzędu."}
         </p>
-        <button
-          type="button"
-          onClick={() => setRole("admin")}
-          className="ink-btn mt-6 inline-flex items-center gap-2 rounded-full bg-[var(--riso-blue)] px-5 py-3 text-[16px] font-bold text-[var(--surface)]"
-        >
-          <Shield className="h-4 w-4" />
-          Wejdź jako urząd
-        </button>
+        {!user && (
+          <Link
+            to="/logowanie"
+            state={{ from: "/admin" }}
+            className="ink-btn mt-6 inline-flex items-center gap-2 rounded-full bg-[var(--riso-blue)] px-5 py-3 text-[16px] font-bold text-[var(--surface)]"
+          >
+            <Shield className="h-4 w-4" aria-hidden />
+            Zaloguj jako urząd
+          </Link>
+        )}
         <Link to="/" className="mt-5 text-[15px] font-bold text-[var(--accent)] underline decoration-2 underline-offset-4">
           Wróć do tablicy
         </Link>
@@ -97,16 +107,12 @@ export function AdminPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setRole("user");
-              navigate("/");
-            }}
+          <Link
+            to="/"
             className="ink-btn rounded-full bg-[var(--riso-yellow)] px-3.5 py-1.5 text-[13px] font-bold"
           >
-            Jako mieszkaniec
-          </button>
+            Tablica mieszkańców
+          </Link>
           <button
             type="button"
             onClick={() => void reset()}
