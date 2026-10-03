@@ -13,13 +13,14 @@ import embeddings
 from auth import admin_required, login_required
 from matching import find_best_matches
 from petition import draft_petition
-from serializers import innovation_to_json, issue_to_json
+from serializers import comment_to_json, innovation_to_json, issue_to_json
 
 UPVOTE_THRESHOLD = 20
 CATEGORIES = {
     "INFRASTRUCTURE", "EDUCATION", "SAFETY", "SENIORS",
     "ACCESSIBILITY", "HEALTH", "COMMUNITY",
 }
+MAX_COMMENT_CHARS = 1000
 MAX_IMAGE_CHARS = 2_100_000  # ~1.5 MB pliku po zakodowaniu base64
 PURGE_INTERVAL_S = 60
 
@@ -194,6 +195,55 @@ def mark_sent(issue_id):
         abort(404, description="Nie znaleziono zgłoszenia")
     conn.commit()
     return _issue_response(issue_id)
+
+
+@app.get("/api/issues/<issue_id>/comments")
+def list_comments(issue_id):
+    _get_issue_row(issue_id)
+    rows = db.get_db().execute(db.Q["list_comments"], {"issue_id": issue_id}).fetchall()
+    return jsonify([comment_to_json(r, g.user) for r in rows])
+
+
+@app.post("/api/issues/<issue_id>/comments")
+@login_required
+def add_comment(issue_id):
+    _get_issue_row(issue_id)
+    data = request.get_json(silent=True) or {}
+    body = str(data.get("body", "")).strip()
+    if not body:
+        abort(400, description="Komentarz nie może być pusty")
+    if len(body) > MAX_COMMENT_CHARS:
+        abort(400, description=f"Komentarz może mieć najwyżej {MAX_COMMENT_CHARS} znaków")
+
+    comment_id = f"cmt-{uuid.uuid4().hex[:10]}"
+    conn = db.get_db()
+    conn.execute(
+        db.Q["insert_comment"],
+        {
+            "id": comment_id,
+            "issue_id": issue_id,
+            "user_id": g.user["id"],
+            "author_name": g.user["display_name"],
+            "body": body,
+        },
+    )
+    conn.commit()
+    row = conn.execute(db.Q["get_comment"], {"id": comment_id}).fetchone()
+    return jsonify(comment_to_json(row, g.user)), 201
+
+
+@app.delete("/api/comments/<comment_id>")
+@login_required
+def delete_comment(comment_id):
+    conn = db.get_db()
+    row = conn.execute(db.Q["get_comment"], {"id": comment_id}).fetchone()
+    if row is None:
+        abort(404, description="Nie znaleziono komentarza")
+    if not comment_to_json(row, g.user)["canDelete"]:
+        abort(403, description="Możesz usuwać tylko własne komentarze")
+    conn.execute(db.Q["delete_comment"], {"id": comment_id})
+    conn.commit()
+    return jsonify({"ok": True})
 
 
 @app.get("/api/issues/<issue_id>/matches")

@@ -3,6 +3,7 @@
 
 PRAGMA foreign_keys = ON;
 
+DROP TABLE IF EXISTS comments;
 DROP TABLE IF EXISTS votes;
 DROP TABLE IF EXISTS issues;
 DROP TABLE IF EXISTS innovations;
@@ -63,3 +64,14 @@ CREATE TABLE votes (
 );
 
 CREATE INDEX idx_votes_user ON votes (user_id);
+
+CREATE TABLE comments (
+    id          TEXT PRIMARY KEY,
+    issue_id    TEXT NOT NULL REFERENCES issues (id) ON DELETE CASCADE,
+    user_id     TEXT REFERENCES users (id) ON DELETE SET NULL,  -- NULL dla danych startowych
+    author_name TEXT NOT NULL,
+    body        TEXT NOT NULL CHECK (length(body) BETWEEN 1 AND 1000),
+    created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
+
+CREATE INDEX idx_comments_issue ON comments (issue_id, created_at);

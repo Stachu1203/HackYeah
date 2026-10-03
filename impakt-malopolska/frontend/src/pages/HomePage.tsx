@@ -6,11 +6,13 @@ import { IssueFeed } from "../components/IssueFeed";
 import { AddIssueForm } from "../components/AddIssueForm";
 import { useIssues } from "../lib/issues-context";
 import { UPVOTE_THRESHOLD } from "../lib/types";
+import { useTheme } from "../lib/theme";
 
 type Tab = "feed" | "map";
 
 export function HomePage() {
   const { issues, ready, error, toggleVote } = useIssues();
+  const { kawaii } = useTheme();
   const [tab, setTab] = useState<Tab>("feed");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -38,13 +40,14 @@ export function HomePage() {
 
   return (
     <div className="relative flex flex-1 flex-col">
-      <div className="mx-auto w-full max-w-lg px-4 pt-7">
+      <div className="mx-auto w-full max-w-lg px-4 pt-6 sm:pt-7">
         <p className="mb-2 inline-block -rotate-2 rounded-md border-2 border-[var(--ink)] bg-[var(--riso-yellow)] px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-[0.18em]">
-          Tablica sąsiedzka · {issues.length} kartek · {totalVotes} głosów
+          <span className="hidden sm:inline">Tablica sąsiedzka · </span>
+          {issues.length} kartek · {totalVotes} głosów
         </p>
-        <h1 className="font-display text-[46px] font-black italic leading-[0.95] tracking-tight text-[var(--ink)]">
+        <h1 className="font-display text-[40px] font-black italic sm:text-[46px] leading-[0.95] tracking-tight text-[var(--ink)]">
           <span className="squiggle">Sąsiedzi</span>
-          <span className="text-[var(--riso-red)]">.</span>
+          <span className="text-[var(--riso-red)]">{kawaii ? " ♡" : "."}</span>
         </h1>
         <p className="mt-4 max-w-md text-[16px] leading-relaxed text-[var(--ink)]/80">
           Problemy z okolicy. <span className="marker font-semibold">Poprzyj</span>,
@@ -145,7 +148,7 @@ export function HomePage() {
             initial={{ opacity: 0, y: 16, rotate: -2 }}
             animate={{ opacity: 1, y: 0, rotate: -1 }}
             exit={{ opacity: 0, y: 10 }}
-            className="fixed bottom-24 left-1/2 z-[70] -translate-x-1/2 rounded-full border-2 border-[var(--ink)] bg-[var(--riso-yellow)] px-5 py-2.5 text-[14px] font-bold text-[var(--ink)] shadow-[3px_3px_0_var(--ink)]"
+            className="fixed bottom-24 left-1/2 z-[70] -translate-x-1/2 rounded-full border-2 border-[var(--ink)] bg-[var(--riso-yellow)] px-5 py-2.5 text-[14px] font-bold text-[var(--ink)] shadow-[3px_3px_0_var(--shadow)]"
           >
             {toast}
           </motion.div>

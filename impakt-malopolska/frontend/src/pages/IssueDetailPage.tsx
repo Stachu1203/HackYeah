@@ -9,6 +9,7 @@ import { CATEGORY_LABELS, UPVOTE_THRESHOLD } from "../lib/types";
 import { CATEGORY_COLORS, CATEGORY_ICONS } from "../lib/category-ui";
 import { categoryPlaceholder } from "../lib/placeholders";
 import { VoteButton } from "../components/VoteButton";
+import { CommentsSection } from "../components/CommentsSection";
 import { timeAgo } from "../components/IssueFeed";
 
 const STATUS_LABELS = {
@@ -153,14 +154,14 @@ export function IssueDetailPage() {
               {STATUS_LABELS[issue.status]}
             </span>
           </div>
-          <h1 className="font-display text-[38px] font-black leading-[1.02] tracking-tight text-[var(--ink)]">
+          <h1 className="font-display text-[30px] font-black leading-[1.05] sm:text-[38px] sm:leading-[1.02] tracking-tight text-[var(--ink)]">
             {issue.title}
           </h1>
           <p className="mt-3 flex items-center gap-1.5 text-[14px] font-medium text-[var(--muted)]">
             <MapPin className="h-4 w-4 shrink-0" aria-hidden />
             {issue.locationName} · {issue.authorName} · {timeAgo(issue.createdAt)}
           </p>
-          <p className="mt-4 text-[18px] leading-relaxed text-[var(--ink)]">
+          <p className="mt-4 text-[17px] leading-relaxed text-[var(--ink)] sm:text-[18px]">
             {issue.description}
           </p>
 
@@ -294,6 +295,8 @@ export function IssueDetailPage() {
             </motion.div>
           )}
         </section>
+
+        <CommentsSection issueId={issue.id} />
       </div>
 
       <AnimatePresence>
@@ -303,7 +306,7 @@ export function IssueDetailPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0, rotate: -1 }}
             exit={{ opacity: 0 }}
-            className="fixed bottom-6 left-1/2 z-[70] -translate-x-1/2 rounded-full border-2 border-[var(--ink)] bg-[var(--riso-yellow)] px-5 py-2.5 text-[14px] font-bold shadow-[3px_3px_0_var(--ink)]"
+            className="fixed bottom-6 left-1/2 z-[70] -translate-x-1/2 rounded-full border-2 border-[var(--ink)] bg-[var(--riso-yellow)] px-5 py-2.5 text-[14px] font-bold shadow-[3px_3px_0_var(--shadow)]"
           >
             {toast}
           </motion.div>

@@ -170,7 +170,7 @@ export function AddIssueForm({
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 32, opacity: 0 }}
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
-              className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] border-2 border-[var(--ink)] bg-[var(--background)] shadow-[6px_6px_0_var(--ink)] sm:rounded-[28px]"
+              className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] border-2 border-[var(--ink)] bg-[var(--background)] shadow-[6px_6px_0_var(--shadow)] sm:rounded-[28px]"
             >
               <div className="flex items-center justify-between border-b-2 border-[var(--ink)] bg-[var(--riso-yellow)] px-5 py-4">
                 <h2

@@ -20,6 +20,22 @@ def issue_to_json(row: sqlite3.Row, voted: bool = False) -> dict:
         "createdAt": row["created_at"],
         "keywords": json.loads(row["keywords"]),
         "voted": voted,
+        "commentsCount": row["comments_count"],
+    }
+
+
+def comment_to_json(row: sqlite3.Row, current_user: sqlite3.Row | None) -> dict:
+    can_delete = current_user is not None and (
+        current_user["role"] == "admin" or current_user["id"] == row["user_id"]
+    )
+    return {
+        "id": row["id"],
+        "issueId": row["issue_id"],
+        "authorName": row["author_name"],
+        "authorRole": row["author_role"],
+        "body": row["body"],
+        "createdAt": row["created_at"],
+        "canDelete": can_delete,
     }
 
 

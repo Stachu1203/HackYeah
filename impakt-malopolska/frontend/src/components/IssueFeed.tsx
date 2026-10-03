@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { MapPin, ArrowUpRight } from "lucide-react";
+import { MapPin, ArrowUpRight, MessageCircle } from "lucide-react";
 import type { Issue } from "../lib/types";
 import { CATEGORY_LABELS, UPVOTE_THRESHOLD } from "../lib/types";
 import { CATEGORY_COLORS, CATEGORY_ICONS } from "../lib/category-ui";
@@ -72,7 +72,7 @@ export function IssueFeed({ issues, onToggleVote }: Props) {
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[var(--ink)]"
                   style={{ background: colors.bg, color: colors.fg }}
                 >
-                  <Icon className="h-[18px] w-[18px]" strokeWidth={2.5} aria-hidden />
+                  <Icon className="h-[18px] w-[18px]" strokeWidth={2.5} aria-label={CATEGORY_LABELS[issue.category]} />
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[15px] font-bold text-[var(--ink)]">
@@ -84,7 +84,7 @@ export function IssueFeed({ issues, onToggleVote }: Props) {
                   </p>
                 </div>
                 <span
-                  className="shrink-0 rounded-full border-2 border-[var(--ink)] px-2.5 py-0.5 text-[11px] font-bold"
+                  className="hidden shrink-0 rounded-full border-2 border-[var(--ink)] px-2.5 py-0.5 text-[11px] font-bold min-[440px]:inline"
                   style={{ background: colors.bg }}
                 >
                   {CATEGORY_LABELS[issue.category]}
@@ -93,7 +93,7 @@ export function IssueFeed({ issues, onToggleVote }: Props) {
 
               <Link
                 to={`/zgloszenie/${issue.id}`}
-                className="relative mx-4 block overflow-hidden rounded-xl border-2 border-[var(--ink)]"
+                className="relative mx-3.5 block overflow-hidden rounded-xl border-2 border-[var(--ink)] sm:mx-4"
               >
                 <img
                   src={src}
@@ -112,9 +112,9 @@ export function IssueFeed({ issues, onToggleVote }: Props) {
                 )}
               </Link>
 
-              <div className="space-y-2 px-4 pb-4 pt-3">
+              <div className="space-y-2 px-3.5 pb-4 pt-3 sm:px-4">
                 <Link to={`/zgloszenie/${issue.id}`} className="group block">
-                  <h2 className="font-display text-[23px] font-bold leading-[1.15] tracking-tight text-[var(--ink)] decoration-[var(--riso-red)] decoration-2 underline-offset-4 group-hover:underline">
+                  <h2 className="font-display text-[21px] font-bold sm:text-[23px] leading-[1.15] tracking-tight text-[var(--ink)] decoration-[var(--riso-red)] decoration-2 underline-offset-4 group-hover:underline">
                     {issue.title}
                   </h2>
                   <p className="mt-1.5 line-clamp-2 text-[15px] leading-relaxed text-[var(--muted)]">
@@ -123,7 +123,17 @@ export function IssueFeed({ issues, onToggleVote }: Props) {
                 </Link>
 
                 <div className="flex items-center justify-between gap-3 pt-2">
-                  <VoteButton issue={issue} onToggle={onToggleVote} />
+                  <div className="flex items-center gap-2">
+                    <VoteButton issue={issue} onToggle={onToggleVote} />
+                    <Link
+                      to={`/zgloszenie/${issue.id}#komentarze`}
+                      className="inline-flex items-center gap-1.5 rounded-full border-2 border-transparent px-2 py-1.5 text-[15px] font-bold text-[var(--ink)] transition hover:border-[var(--ink)]"
+                      aria-label={`Komentarze (${issue.commentsCount}): ${issue.title}`}
+                    >
+                      <MessageCircle className="h-4 w-4 text-[var(--riso-mint)]" strokeWidth={2.5} aria-hidden />
+                      <span className="tabular-nums">{issue.commentsCount}</span>
+                    </Link>
+                  </div>
                   <div className="flex items-center gap-3">
                     <span
                       className="hidden text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)] sm:inline"

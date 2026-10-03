@@ -98,9 +98,10 @@ def purge_old_issues(conn: sqlite3.Connection) -> int:
 def init_if_needed() -> None:
     conn = connect()
     try:
-        # Tabela users doszła najpóźniej — jej brak oznacza starą bazę do odtworzenia.
+        # Tabela comments doszła najpóźniej — jej brak oznacza starą bazę do odtworzenia
+        # (konta w tabeli users przeżywają odtworzenie).
         has_schema = conn.execute(
-            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'users'"
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'comments'"
         ).fetchone()
         if not has_schema:
             reset_database(conn)

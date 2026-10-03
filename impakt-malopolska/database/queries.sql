@@ -4,13 +4,15 @@
 
 -- name: list_issues
 SELECT id, title, description, category, latitude, longitude, location_name,
-       upvotes, status, image_url, author_name, created_at, keywords
+       upvotes, status, image_url, author_name, created_at, keywords,
+       (SELECT COUNT(*) FROM comments c WHERE c.issue_id = issues.id) AS comments_count
 FROM issues
 ORDER BY created_at DESC;
 
 -- name: get_issue
 SELECT id, title, description, category, latitude, longitude, location_name,
-       upvotes, status, image_url, author_name, created_at, keywords, embedding
+       upvotes, status, image_url, author_name, created_at, keywords, embedding,
+       (SELECT COUNT(*) FROM comments c WHERE c.issue_id = issues.id) AS comments_count
 FROM issues
 WHERE id = :id;
 
@@ -95,3 +97,25 @@ SELECT id, username, display_name, password_hash, role FROM users WHERE username
 
 -- name: get_user_by_id
 SELECT id, username, display_name, role FROM users WHERE id = :id;
+
+-- name: list_comments
+SELECT c.id, c.issue_id, c.user_id, c.author_name, c.body, c.created_at,
+       COALESCE(u.role, 'user') AS author_role
+FROM comments c
+LEFT JOIN users u ON u.id = c.user_id
+WHERE c.issue_id = :issue_id
+ORDER BY c.created_at ASC, c.rowid ASC;
+
+-- name: get_comment
+SELECT c.id, c.issue_id, c.user_id, c.author_name, c.body, c.created_at,
+       COALESCE(u.role, 'user') AS author_role
+FROM comments c
+LEFT JOIN users u ON u.id = c.user_id
+WHERE c.id = :id;
+
+-- name: insert_comment
+INSERT INTO comments (id, issue_id, user_id, author_name, body)
+VALUES (:id, :issue_id, :user_id, :author_name, :body);
+
+-- name: delete_comment
+DELETE FROM comments WHERE id = :id;

@@ -1,4 +1,4 @@
-import type { Innovation, Issue, IssueCategory, PetitionDraft, User } from "./types";
+import type { Comment, Innovation, Issue, IssueCategory, PetitionDraft, User } from "./types";
 
 export type AddIssueInput = {
   title: string;
@@ -58,6 +58,11 @@ export const api = {
       `/issues/${id}/petition`,
       { innovationId },
     ),
+  comments: (id: string) => request<Comment[]>(`/issues/${id}/comments`),
+  addComment: (id: string, body: string) =>
+    post<Comment>(`/issues/${id}/comments`, { body }),
+  deleteComment: (commentId: string) =>
+    request<{ ok: boolean }>(`/comments/${commentId}`, { method: "DELETE" }),
   reset: () => post<{ ok: boolean }>("/reset"),
   me: () => request<{ user: User | null }>("/auth/me"),
   login: (username: string, password: string) =>

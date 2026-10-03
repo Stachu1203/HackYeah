@@ -1,6 +1,7 @@
 import { MotionConfig } from "framer-motion";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { SiteNav } from "./components/SiteNav";
+import { KawaiiSparkles } from "./components/KawaiiDecor";
 import { IssuesProvider } from "./lib/issues-context";
 import { AuthProvider } from "./lib/auth-context";
 import { HomePage } from "./pages/HomePage";
@@ -19,8 +20,9 @@ export default function App() {
     <MotionConfig reducedMotion="user">
       <AuthProvider>
         <IssuesProvider>
+          <KawaiiSparkles />
           <SiteNav />
-          <main className="flex flex-1 flex-col">
+          <main className="relative z-[1] flex flex-1 flex-col pb-[env(safe-area-inset-bottom,0px)]">
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/zgloszenie/:id" element={<IssueDetailPage />} />

@@ -126,3 +126,15 @@ INSERT INTO innovations (id, title, source_municipality, description, category, 
  'Dyżury opiekunów zastępczych w ośrodku dziennym — 4 godziny wytchnienia tygodniowo.',
  'SENIORS', '["opieka wytchnieniowa", "opiekunowie", "dzień", "seniorzy", "wsparcie"]',
  'Usługa społeczna CUS / ROPS');
+
+INSERT INTO comments (id, issue_id, author_name, body, created_at) VALUES
+('cmt-01', 'iss-01', 'Marek W.', 'Potwierdzam — wracam tamtędy po 21 i lampa nie działa od miesiąca.',
+ strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-2 days', '-6 hours')),
+('cmt-02', 'iss-01', 'Zofia M.', 'Zgłaszałam to w ZDMK, ale bez odpowiedzi. Może wniosek z podpisami zadziała.',
+ strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-1 days', '-2 hours')),
+('cmt-03', 'iss-05', 'Anna K.', 'Moje dziecko też chodzi tą trasą. Dziura jest coraz większa po deszczach.',
+ strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-4 days')),
+('cmt-04', 'iss-10', 'Kasia R.', 'Chętnie poprowadzę tam warsztaty z szycia dla sąsiadów!',
+ strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-5 days', '-3 hours')),
+('cmt-05', 'iss-02', 'Piotr S.', 'Moja mama na wózku musi czekać, aż ktoś pomoże. Rampa naprawdę potrzebna.',
+ strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-3 days', '-1 hours'));

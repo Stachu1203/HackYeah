@@ -65,7 +65,7 @@ export function AdminPage() {
   if (!isAdmin) {
     return (
       <div className="mx-auto flex max-w-lg flex-1 flex-col items-center justify-center px-6 py-20 text-center">
-        <span className="mb-5 flex h-16 w-16 -rotate-6 items-center justify-center rounded-full border-2 border-[var(--ink)] bg-[var(--riso-yellow)] shadow-[3px_3px_0_var(--ink)]">
+        <span className="mb-5 flex h-16 w-16 -rotate-6 items-center justify-center rounded-full border-2 border-[var(--ink)] bg-[var(--riso-yellow)] shadow-[3px_3px_0_var(--shadow)]">
           <Lock className="h-7 w-7 text-[var(--ink)]" aria-hidden />
         </span>
         <h1 className="font-display text-[34px] font-black italic tracking-tight">Panel urzędu</h1>
@@ -92,14 +92,14 @@ export function AdminPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 pb-12 pt-7 sm:px-6">
+    <div className="mx-auto w-full max-w-5xl px-4 pb-12 pt-6 sm:px-6 sm:pt-7">
       <div className="mb-7 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="mb-2 inline-block -rotate-2 rounded-md border-2 border-[var(--ink)] bg-[var(--riso-blue)] px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[var(--surface)]">
             Widok instytucji
           </p>
-          <h1 className="flex items-center gap-2 font-display text-[42px] font-black italic leading-none tracking-tight">
-            <Flame className="h-9 w-9 text-[var(--riso-red)]" fill="var(--riso-yellow)" aria-hidden />
+          <h1 className="flex items-center gap-2 font-display text-[32px] font-black italic leading-none tracking-tight sm:text-[42px]">
+            <Flame className="h-7 w-7 shrink-0 text-[var(--riso-red)] sm:h-9 sm:w-9" fill="var(--riso-yellow)" aria-hidden />
             <span className="squiggle">Panel urzędu</span>
           </h1>
           <p className="mt-3 max-w-xl text-[15px] text-[var(--ink)]/75">
@@ -124,7 +124,7 @@ export function AdminPage() {
         </div>
       </div>
 
-      <div className="mb-7 grid grid-cols-3 gap-3 sm:gap-5">
+      <div className="mb-7 grid grid-cols-3 gap-2.5 sm:gap-5">
         {[
           { label: "Głosy", value: totalVotes, color: "var(--riso-pink)", tilt: "-rotate-1" },
           { label: "Do wniosku", value: readyCount, color: "var(--riso-yellow)", tilt: "rotate-1" },
@@ -135,15 +135,15 @@ export function AdminPage() {
             className={`paper-card p-3 sm:p-4 ${stat.tilt}`}
             style={{ background: stat.color }}
           >
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em]">{stat.label}</p>
-            <p className="font-display text-[34px] font-black leading-tight tracking-tight sm:text-[46px]">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.08em] sm:text-[11px] sm:tracking-[0.14em]">{stat.label}</p>
+            <p className="font-display text-[30px] font-black leading-tight tracking-tight sm:text-[46px]">
               {stat.value}
             </p>
           </div>
         ))}
       </div>
 
-      <div className="mb-5 inline-flex max-w-full gap-1 overflow-x-auto rounded-full border-2 border-[var(--ink)] bg-[var(--surface)] p-1">
+      <div className="mb-5 inline-flex max-w-full gap-1 overflow-x-auto rounded-full [scrollbar-width:none] border-2 border-[var(--ink)] bg-[var(--surface)] p-1">
         {(
           [
             ["ALL", "Wszystkie"],
@@ -168,13 +168,13 @@ export function AdminPage() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
-        <div className="paper-card h-[420px] overflow-hidden lg:h-[540px]">
+        <div className="paper-card h-[340px] overflow-hidden sm:h-[420px] lg:h-[540px]">
           <IssuesMap
             issues={filtered}
             selectedId={selectedId}
             onSelect={setSelectedId}
             heatMode
-            className="h-full min-h-[420px]"
+            className="h-full"
           />
         </div>
 

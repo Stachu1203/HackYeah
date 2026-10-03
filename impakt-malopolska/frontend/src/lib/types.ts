@@ -26,6 +26,18 @@ export interface Issue {
   keywords: string[];
   /** czy bieżąca przeglądarka już poparła zgłoszenie */
   voted: boolean;
+  commentsCount: number;
+}
+
+export interface Comment {
+  id: string;
+  issueId: string;
+  authorName: string;
+  authorRole: "user" | "admin";
+  body: string;
+  createdAt: string;
+  /** autor komentarza albo urząd */
+  canDelete: boolean;
 }
 
 export interface User {
